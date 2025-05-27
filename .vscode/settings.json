@@ -1,0 +1,7 @@
+{
+    "editor.tabSize": 4,
+
+    // uncomment below to enable wasm intellisense
+    // "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
+}
+  
