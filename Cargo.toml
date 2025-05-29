@@ -6,6 +6,11 @@ description = "A Rust library for parsing and converting rhythm game charts."
 license = "MIT"
 version = "0.0.1"
 edition = "2021"
+exclude = [
+    "tests/*",
+    ".vscode/*",
+    "test-wasm.sh",
+]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
