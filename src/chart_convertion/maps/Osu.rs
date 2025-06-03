@@ -520,7 +520,6 @@ pub(crate) fn parse_osu(raw_chart: &str) -> Result<chart_classes::Chart, Box<dyn
 }
 
 
-// TODO: REWRITE
 pub(crate) fn convert_to_osu(chart: &chart_classes::Chart) -> Result<String, Box<dyn std::error::Error>> {
     let mut template = String::from("osu file format v14\n");
     let key_count = chart.chartinfo.key_count;
