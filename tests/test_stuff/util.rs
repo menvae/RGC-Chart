@@ -35,7 +35,7 @@ macro_rules! parse_and_convert {
         use std::time::Instant;
         use std::io::{self, Write};
         use std::path::Path;
-        use self::chart_classes::Chart;
+        use self::Chart;
         
         println_test(stringify!($name), "\x1b[34m", "Started running test");
 

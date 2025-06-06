@@ -1,6 +1,6 @@
 use std::fmt;
 use std::error::Error;
-use crate::chart_classes::GameMode;
+use crate::models::common::GameMode;
 
 #[derive(Debug)]
 pub enum ParseError<GameMode: fmt::Display + 'static> {

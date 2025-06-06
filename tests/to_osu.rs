@@ -6,8 +6,8 @@ fn sm_to_osu_test() {
     parse_and_convert!(
         sm_to_osu,
         "./tests/Maps/etterna/Kil_ChineseTea/ct.sm",
-        chart_convertion::parse::parse_sm,
-        chart_convertion::convert::convert_to_osu,
+        parse::from_sm,
+        write::to_osu,
         true
     );
 }

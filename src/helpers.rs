@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::chart_classes::TimingChangeType;
+use crate::models::common::TimingChangeType;
 
 #[inline(always)]
 pub fn to_millis(number: f32) -> f32 {

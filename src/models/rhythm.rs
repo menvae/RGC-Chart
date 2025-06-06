@@ -1,5 +1,5 @@
 use crate::helpers::{thresholded_ceil, to_millis};
-use crate::chart_classes::TimingChangeType;
+use crate::models::common::TimingChangeType;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
