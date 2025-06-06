@@ -2,7 +2,7 @@
 name = "rgc-chart"
 repository = "https://github.com/menvae/RGC-Chart"
 authors = ["menvae"]
-description = "A Rust library for parsing and converting rhythm game charts."
+description = "A library for parsing and writing rhythm game charts."
 license = "MIT"
 version = "0.0.1"
 edition = "2021"
