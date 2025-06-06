@@ -31,6 +31,7 @@ let sm_chart = parse::from_sm(raw_sm_string).expect("Failed to parse Stepmania c
 
 #### Writing Charts
 ```rust
+use rgc_chart::parse;
 use rgc_chart::write;
 use rgc_chart::Chart;
 
