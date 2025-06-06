@@ -1,4 +1,13 @@
-/test_export
+# builds
 /target
+
+# wasm builds
 /pkg
+rgc-chart-node.tgz
+rgc-chart-web.tgz
+
+# testing
+/test_export
+
+# I don't think we really need this for this library
 Cargo.lock
