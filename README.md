@@ -127,16 +127,16 @@ pub struct HitObjects {
 ### Installation
 For Node.js:
 ```sh
-npm install rgc-chart-node
+npm install rgc-chart-nodejs
 ```
 
 For web projects:
 ```html
-<script src="https://unpkg.com/rgc-chart-web@latest/rgc_chart.js"></script>
+<script src="https://unpkg.com/rgc-chart-browser@latest/rgc_chart.js"></script>
 ```
 or
 ```javascript
-npm install rgc-chart-web
+npm install rgc-chart-browser
 ```
 then use as an ES module
 
@@ -199,7 +199,7 @@ npm run build # debug build
 npm run build-release # release build
 ```
 
-3. This will build it for both node and web and the output will be in `dist-web` and `dist-node` directory.
+3. This will build it for both node and browser and the output will be in `dist-web` and `dist-node` directory.
 
 ## License
 RGC uses the MIT License for all its sibiling projects.
