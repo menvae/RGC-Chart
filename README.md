@@ -116,9 +116,9 @@ For web projects:
 ```
 or
 ```javascript
-const rgcChart = await import('path/to/rgc_chart.js')
-await rgcChart.default();
+npm install rgc-chart-web
 ```
+then use as an ES module
 
 ### API Reference
 
@@ -129,7 +129,7 @@ import * as rgcChart from 'rgc-chart'; // or if not on node use the path to rgc_
 
 // or alternatively
 const rgcChart = await import('path/to/rgc_chart.js')
-await rgcChart.default();
+await rgcChart.default(); // you don't need this unless you're fetching it. remove it if it causes an error.
 
 // For CommonJS
 const rgcChart = require('rgc-chart');
