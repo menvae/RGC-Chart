@@ -1,6 +1,26 @@
 # RGC Chart
 A library for parsing and writing charts for various rhythm games. It supports cross-platform usage including Web and Node.js environments via WebAssembly (WASM).
 
+## Table of Contents
+
+- [Rust Usage](#rust-usage)
+    - [Installation](#installation)
+    - [API Reference](#api-reference)
+        - [Parsing Charts](#parsing-charts)
+        - [Writing Charts](#writing-charts)
+        - [Chart Structure](#chart-structure)
+- [JavaScript/TypeScript Usage](#javascripttypescript-usage)
+    - [Installation](#installation-1)
+    - [API Reference](#api-reference-1)
+        - [Initialization](#initialization)
+        - [Parsing Charts](#parsing-charts-1)
+        - [Writing Charts](#writing-charts-1)
+        - [TypeScript Types](#typescript-types)
+- [Building](#building)
+    - [Rust Library](#rust-library)
+    - [WASM Bindings](#wasm-bindings)
+- [License](#license)
+
 ## Rust Usage
 
 ### Installation
