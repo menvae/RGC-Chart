@@ -129,11 +129,12 @@ import * as rgcChart from 'rgc-chart'; // or if not on node use the path to rgc_
 
 // or alternatively
 const rgcChart = await import('path/to/rgc_chart.js')
-await rgcChart.default(); // you don't need this unless you're using it inside a script tag or fetching. remove it if it causes an error.
 
 // For CommonJS
 const rgcChart = require('rgc-chart');
 ```
+
+you may need to do ``await rgcChart.default()`` after importing if you're using it in a script tag (with type="module") or you get an error like ``Uncaught TypeError: Cannot read properties of undefined (reading '__wbindgen_malloc')``
 
 #### Parsing Charts
 ```javascript
