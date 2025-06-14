@@ -27,7 +27,7 @@ A library for parsing and writing charts for various rhythm games. It supports c
 Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-rgc-chart = "0.0.1"
+rgc-chart = "0.0.2"
 ```
 
 Or run:
@@ -47,6 +47,9 @@ let osu_chart = parse::from_osu(raw_osu_string).expect("Failed to parse osu! cha
 
 // Parse a Stepmania chart from string
 let sm_chart = parse::from_sm(raw_sm_string).expect("Failed to parse Stepmania chart");
+
+// Parse a Quaver chart from string
+let qua_chart = parse::from_sm(raw_sm_string).expect("Failed to parse Quaver chart");
 ```
 
 #### Writing Charts
@@ -61,6 +64,9 @@ let chart: Chart = parse::from_osu(raw_osu_string).expect("Failed to parse osu! 
 let osu_string = write::to_osu(&chart);
 
 // Write to Stepmania format
+let sm_string = write::to_sm(&chart);
+
+// Write to Quaver format
 let sm_string = write::to_sm(&chart);
 ```
 
@@ -96,8 +102,6 @@ pub struct ChartInfo {
     pub audio_offset: f32,
     pub preview_time: f32,
     pub key_count: u8,
-    pub row_count: u32,
-    pub object_count: u32,
 }
 ```
 The `TimingPoints` struct contains all the timing information such as bpm changes and sv:
@@ -163,6 +167,9 @@ const chart = rgcChart.parse_from_osu(rawOsuString);
 
 // Parse a Stepmania chart from string
 const chart = rgcChart.parse_from_sm(rawSmString);
+
+// Parse a Quaver chart from string
+const chart = rgcChart.parse_from_qua(rawSmString);
 ```
 
 #### Writing Charts
@@ -172,6 +179,9 @@ const osuString = rgcChart.write_to_osu(chart);
 
 // write to Stepmania format
 const smString = rgcChart.write_to_sm(chart);
+
+// write to Quaver format
+const quaString = rgcChart.write_to_qua(chart);
 ```
 
 #### TypeScript Types
