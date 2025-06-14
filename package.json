@@ -10,9 +10,9 @@
   },
   "scripts": {
     "build": "wasm-pack build --target nodejs --out-dir dist-node && wasm-pack build --target web --out-dir dist-web",
-    "build-release": "wasm-pack build --release --target nodejs --out-dir dist-node && wasm-pack build --release --target web --out-dir dist-web && npm run fix-pkg-names",
+    "build-release": "wasm-pack build --release --target nodejs --out-dir dist-node && wasm-pack build --release --target web --out-dir dist-web && npm run fix-pkg",
     
-    "fix-pkg-names": "node scripts/fix-pkg-names.js",
+    "fix-pkg": "node scripts/fix-pkg.js",
     
     "pack-node": "cd dist-node && npm pack && mv rgc-chart-*.tgz ../rgc-chart-node.tgz",
     "pack-web": "cd dist-web && npm pack && mv rgc-chart-*.tgz ../rgc-chart-web.tgz",
@@ -24,16 +24,6 @@
     
     "prepublish": "npm run build-release"
   },
-  "keywords": [
-    "wasm",
-    "rust",
-    "rhythm-game",
-    "osu",
-    "stepmania",
-    "parser",
-    "converter",
-    "writer"
-  ],
   "dependencies": {
     "wasm-bindgen": "^0.2.0"
   }
