@@ -24,8 +24,8 @@ type BpmsAndStops = (Vec<f32>, Vec<f32>, Vec<TimingChangeType>);
 pub fn parse_beats(raw: &str) -> (Vec<f32>, Vec<f32>) {
     // lazy
     match raw {
-        "No BPM Data" => return (vec![0.0], vec![*ChartDefaults::BPM]),
-        "No STOPS Data" => return (vec![], vec![]),
+        ChartDefaults::RAW_BPMS => return (vec![0.0], vec![*ChartDefaults::BPM]),
+        ChartDefaults::RAW_STOPS => return (vec![], vec![]),
         _ => {}
     }
 
@@ -78,7 +78,7 @@ pub(crate) const fn get_sm_note_type(note: char) -> KeyType {
     }
 }
 
-fn process_headers<F>(raw_chart: &str, mut lambda: F)
+fn process_sections<F>(raw_chart: &str, mut lambda: F)
 where
     F: FnMut(&str, &str),
 {
@@ -131,6 +131,7 @@ fn process_timing_points(bpms_and_stops: &BpmsAndStops, bpms_only: (Vec<f32>, Ve
                 prev_bpm = bpm_or_duration;
             },
             TimingChangeType::Stop => {
+                // TODO: add stop point as is and we unwrap it inside the writer..
                 timing_points.add(
                     insert_time,
                     0.0, 
@@ -175,26 +176,23 @@ fn process_notes(raw_note_data: &str, chartinfo: &mut models::chartinfo::ChartIn
     let (beats, bpms_and_durations, change_types) = bpms_and_stops;
     
     let start_time = chartinfo.audio_offset;
-    let separated_note_data: Vec<&str> = trim_split_iter(raw_note_data.split(":"));
+    let separated_note_data: Vec<&str> = trim_split_iter(raw_note_data.split(":"), false);
 
     let difficulty_name = separated_note_data[2];
     chartinfo.difficulty_name = difficulty_name.or_default_empty(ChartDefaults::DIFFICULTY_NAME);
 
-    // todo: make error for stepmania if converting from keys other than 4
-    let key_count = 4; // todo: change this later if gonna make this function generic to support Beatmania
+    // TODO: make error for stepmania if converting from keys other than 4
+    let key_count = 4; // TODO: change this later if gonna make this function generic to support Beatmania
 
     let raw_notes = separated_note_data.last().unwrap_or(&"Failed to get raw notes in notes section");
     let measures: Vec<&str> = raw_notes.split(",").collect();
 
     let mut measure_beat_count: f32 = 0.0;
-    let mut total_row_count = 0;
-    let mut total_object_count = 0;
 
     for measure in measures {
         let trimmed_measure = measure.trim();
         let rows: Vec<_> = trimmed_measure.split('\n').collect();
         let row_count = rows.len();
-        total_row_count += row_count;
         let beat_time_per_row = 4.0 / row_count as f32;
     
         for (row_index, row) in rows.into_iter().enumerate() {
@@ -209,7 +207,6 @@ fn process_notes(raw_note_data: &str, chartinfo: &mut models::chartinfo::ChartIn
             let keys = parse_keys_in_row(row);
             for key in &keys {
                 if *key != KeyType::Empty {
-                    total_object_count += 1;
                 }
             }
             
@@ -224,16 +221,13 @@ fn process_notes(raw_note_data: &str, chartinfo: &mut models::chartinfo::ChartIn
         measure_beat_count += 4.0;
     }
 
-    chartinfo.row_count = total_row_count as u32;
-    chartinfo.object_count = total_object_count;
-
     hitobjects
 }
 
 pub(crate) fn from_sm(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn std::error::Error>>  {
     use models::{metadata::Metadata, chartinfo::ChartInfo, chart::Chart};
 
-    let uncommented_chart = remove_comments(raw_chart);
+    let uncommented_chart = remove_comments(raw_chart, "//");
 
     if uncommented_chart.trim().is_empty() {
         return Err(Box::new(errors::ParseError::<GameMode>::EmptyChartData));
@@ -250,7 +244,7 @@ pub(crate) fn from_sm(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn s
 
     
 
-    process_headers(&uncommented_chart, |header, content| {
+    process_sections(&uncommented_chart, |header, content| {
         match header {
             "#TITLE" => metadata.title = content.or_default_empty(ChartDefaults::TITLE),
             "#ARTIST" => metadata.artist = content.or_default_empty(ChartDefaults::ARTIST),

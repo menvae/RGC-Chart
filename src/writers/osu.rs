@@ -1,10 +1,9 @@
 use crate::models;
 use crate::models::common::{
-    Row,
     KeyType,
     TimingChangeType,
 };
-use crate::utils::helpers::add_key_value_template;
+use crate::utils::helpers::{add_key_value_template, find_sliderend_time};
 #[allow(unused)]
 use crate::errors;
 
@@ -16,7 +15,7 @@ fn bpm_to_beatlength(bpm: &f32) -> f32 {
 #[inline(always)]
 fn multiplier_to_beatlength(multiplier: &f32) -> f32 {
     if *multiplier == 0.0 { return -10000.0 }
-    -100.0 / multiplier
+    -100.0 / multiplier.abs()
 }
 
 #[inline(always)]
@@ -142,26 +141,4 @@ SliderTickRate:1");
     }
 
     Ok(template)
-}
-
-#[inline(always)]
-fn find_sliderend_time(
-    start_idx: usize,
-    key_idx: usize,
-    hitobjects: &[(&f32, &f32, &Vec<u8>, &Row)],
-) -> f32 {
-    if start_idx >= hitobjects.len() {
-        return 0.0;
-    }
-
-    let start_time = hitobjects[start_idx].0;
-    let slice = &hitobjects[start_idx + 1..];
-    
-    for (time, _, _, row) in slice {
-        if row[key_idx] == KeyType::SliderEnd {
-            return **time
-        }
-    }
-    
-    *start_time
 }

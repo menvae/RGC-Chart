@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use crate::models::common::TimingChangeType;
+use crate::models::common::{TimingChangeType, Row, KeyType};
 
 #[inline(always)]
 pub fn to_millis(number: f32) -> f32 {
@@ -11,10 +11,10 @@ pub fn to_seconds(number: f32) -> f32 {
     number / 1000f32
 }
 
-pub fn remove_comments(string: &str) -> String {
+pub fn remove_comments(string: &str, comment_begin: &str) -> String {
     let mut result = String::with_capacity(string.len());
     for line in string.lines() {
-        let (content, _) = line.split_once("//").unwrap_or((line, ""));
+        let (content, _) = line.split_once(comment_begin).unwrap_or((line, ""));
         if content.chars().any(|c| !c.is_whitespace()) {
             result.push_str(content);
             result.push('\n');
@@ -31,11 +31,15 @@ pub fn parse_key_value(raw_str: &str) -> (&str, &str) {
 }
 
 #[inline(always)]
-pub fn trim_split_iter<'a, I>(split_iter: I) -> Vec<&'a str>
+pub fn trim_split_iter<'a, I>(split_iter: I, remove_whitespace: bool) -> Vec<&'a str>
 where
     I: Iterator<Item = &'a str>,
 {
-    split_iter.map(|s| s.trim()).collect()
+    if remove_whitespace {
+        split_iter.map(|s| s.trim()).filter(|s| !s.is_empty()).collect()
+    } else {
+        split_iter.map(|s| s.trim()).collect()
+    }
 }
 
 // If you make fun of using a match statement here
@@ -92,6 +96,28 @@ pub fn merge_bpm_and_stops(
     }
 
     (beats, values, types)
+}
+
+#[inline(always)]
+pub fn find_sliderend_time(
+    start_idx: usize,
+    key_idx: usize,
+    hitobjects: &[(&f32, &f32, &Vec<u8>, &Row)],
+) -> f32 {
+    if start_idx >= hitobjects.len() {
+        return 0.0;
+    }
+
+    let start_time = hitobjects[start_idx].0;
+    let slice = &hitobjects[start_idx + 1..];
+    
+    for (time, _, _, row) in slice {
+        if row[key_idx] == KeyType::SliderEnd {
+            return **time
+        }
+    }
+    
+    *start_time
 }
 
 pub trait StrDefaultExtension {

@@ -74,27 +74,6 @@ enum Event {
     Unknown(String),
 }
 
-#[derive(Debug)]
-#[repr(C)]
-struct SliderEnd {
-    time: i32,
-    column: usize
-}
-
-enum TimeLine {
-    HitObject(HitObject),
-    SliderEnd(SliderEnd),
-}
-
-impl TimeLine {
-    const fn time(&self) -> i32 {
-        match self {
-            TimeLine::HitObject(h) => h.2,
-            TimeLine::SliderEnd(s) => s.time,
-        }
-    }
-}
-
 #[inline(always)]
 fn beatlength_to_bpm(beatlength: &f32) -> f32 {
     1.0 / beatlength * 60000.0
@@ -135,7 +114,6 @@ where
     F: FnMut(&str, &str) -> Result<(), Box<dyn std::error::Error>>,
 {
     for line in content.lines().map(str::trim) {
-
         let (key, value) = parse_key_value(line);
         lambda(key, value)?;
     }
@@ -288,7 +266,7 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
     use self::OsuSection::*;
     use models::{metadata::Metadata, chartinfo::ChartInfo, timing_points::TimingPoints, hitobjects::HitObjects, chart::Chart};
 
-    let uncommented_chart = remove_comments(raw_chart);
+    let uncommented_chart = remove_comments(raw_chart, "//");
     if uncommented_chart.trim().is_empty() {
         return Err(Box::new(errors::ParseError::<GameMode>::EmptyChartData));
     }
@@ -306,17 +284,15 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
     let mut temp_row: Row = Vec::new();
     let mut temp_hitsounds: Vec<u8> = Vec::new();
 
-    
-
     process_sections(&uncommented_chart, |section, content| {
         match section {
             General => {
                 process_key_value(content, |key, value| {
                     match key {
                         "AudioFilename" => chartinfo.song_path = value.or_default_empty(ChartDefaults::SONG_PATH),
-                        "AudioLeadIn" => {}, // todo: recheck later
+                        "AudioLeadIn" => {}, // TODO: recheck later
                         "PreviewTime" => chartinfo.preview_time = value.or_default_empty_as(*ChartDefaults::PREVIEW_TIME),
-                        "Mode" => { validate_mode_mania(value)?; }, // todo: modify this when adding taiko support later
+                        "Mode" => { validate_mode_mania(value)?; }, // TODO: modify this when adding taiko support later
                         _ => {},
                     }
                     Ok(())
@@ -407,94 +383,47 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
             },
             
             HitObjects => {
+                use models::timeline::{Timeline, TimelineHitObject};
 
-                let timeline: Vec<TimeLine> = {
+                let lines: Vec<&str> = content.lines().map(str::trim).filter(|s| !s.is_empty()).collect();
+                let mut timeline: Timeline<i32> = Timeline::with_capacity(lines.len());
 
-                    let lines: Vec<&str> = content.lines().map(str::trim).filter(|s| !s.is_empty()).collect();
-                    let mut hitobjects = Vec::with_capacity(lines.len() * 2);
-                
-                    for line in lines {
-                        let hit_object = parse_hitobject(line)?;
+                for line in lines {
+                    let hit_object: HitObject = parse_hitobject(line)?;
+                    let slider_end_time = hit_object.5;
+                    let object_time = hit_object.2;
+                    let object_column = coords_to_column(hit_object.0, key_count);
 
-                        if hit_object.5 != 0 {
-                            let slider_end = SliderEnd {
-                                time: hit_object.5,
-                                column: coords_to_column(hit_object.0, key_count),
-                            };
-                            hitobjects.push(TimeLine::SliderEnd(slider_end));
-                        }
+                    if hit_object.3 == 128 {
+                        let slider = TimelineHitObject {
+                            time: object_time,
+                            column: object_column,
+                            key_type: KeyType::SliderStart,
+                        };
 
-                        hitobjects.push(TimeLine::HitObject(hit_object));
-                        
-                    }
-
-                    hitobjects.sort_unstable_by_key(|tl| tl.time());
-                    hitobjects
-                };
-
-                let mut current_time = timeline.first().unwrap().time(); // init time, is actually previous time
-                let mut time = 0;
-                #[allow(unused)]
-                let mut row_beat = 0.0;
-                let start_time = chartinfo.audio_offset;
-
-                for hitobject_or_sliderend in timeline {
-
-                    time = hitobject_or_sliderend.time();        
-
-                    if time != current_time {
-                        row_beat = calculate_beat_from_time(current_time as f32, start_time, (&timing_points.times, &timing_points.bpms));
-                        
-                        hitobjects.add_hitobject(
-                            current_time as f32,
-                            row_beat,
-                            temp_hitsounds.clone(),
-                            temp_row.clone(),
+                        let slider_end = TimelineHitObject {
+                            time: slider_end_time,
+                            column: object_column,
+                            key_type: KeyType::SliderEnd,
+                        };
+                    
+                        timeline.add_sorted(slider);
+                        timeline.add_sorted(slider_end);
+                    } else if (hit_object.3 & 1u8) == 1 {
+                        timeline.add_sorted(
+                        TimelineHitObject {
+                                time: object_time,
+                                column: object_column,
+                                key_type: KeyType::Normal,
+                            }
                         );
-
-                        current_time = time;
-                        temp_row.fill(KeyType::Empty);
-                        temp_hitsounds.fill(0);
-                    }
-
-                    match hitobject_or_sliderend {
-                        TimeLine::HitObject(hit_object) => {
-                            let column = coords_to_column(hit_object.0, key_count);
-                            
-                            match hit_object.3 {
-                                128 => {
-                                    temp_row[column] = KeyType::SliderStart;
-                                },
-                                n if (n & 1u8) == 1 => {
-                                    if temp_row[column] != KeyType::SliderStart {
-                                        temp_row[column] = KeyType::Normal;
-                                    }
-                                },
-                                _ => {}
-                            }
-                            
-                        },
-
-                        TimeLine::SliderEnd(slider_end) => {
-                            if temp_row[slider_end.column] != KeyType::SliderStart {
-                                temp_row[slider_end.column] = KeyType::SliderEnd;
-                            }
-                        }
                     }
                 }
 
-                row_beat = calculate_beat_from_time(time as f32, start_time, (&timing_points.times, &timing_points.bpms));
-                if current_time != 0 {
-                    hitobjects.add_hitobject(
-                        time as f32,
-                        row_beat,
-                        temp_hitsounds.clone(),
-                        temp_row.clone(),
-                    );
-                }
-            
+                timeline.to_hitobjects(&mut hitobjects,
+                    chartinfo.audio_offset,chartinfo.key_count as usize,
+                    &timing_points.times, &timing_points.bpms);
             },
-    
             _ => {},
             
         }
