@@ -10,6 +10,8 @@ exclude = [
     "tests/*",
     ".vscode/*",
     "test-wasm.sh",
+    "scripts/*",
+    "package.json"
 ]
 
 [lib]
