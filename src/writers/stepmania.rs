@@ -150,12 +150,12 @@ pub(crate) fn to_sm(chart: &models::chart::Chart) -> Result<String, Box<dyn std:
     let last_measure_index = padded_measures.len() - 1;
     notes_template.push('\n');
     notes_template.push_str("   ");
-    notes_template.push_str("dance-single:\n"); // todo: support for multikey later
+    notes_template.push_str("dance-single:\n"); // TODO: support for multikey later
     notes_template.push_str("   ");
     notes_template.push_str(&chart.metadata.creator);
     notes_template.push_str(":\n");
     notes_template.push_str("   ");
-    notes_template.push_str("Edit"); // todo: maybe process difficulty value and choose an sm difficulty??
+    notes_template.push_str("Edit"); // TODO: maybe process difficulty value and choose an sm difficulty??
     notes_template.push_str(":\n");
     notes_template.push_str("   ");
     notes_template.push_str("1:\n");
@@ -209,7 +209,7 @@ pub(crate) fn to_sm(chart: &models::chart::Chart) -> Result<String, Box<dyn std:
     add_key_value_template(&mut template,
         "#SAMPLESTART",":",  &to_seconds(chart.chartinfo.preview_time).to_string(), ";\n");
     add_key_value_template(&mut template,
-        "#SAMPLELENGTH",":",  "12.000", ";\n"); // todo: maybe add chart length in chart info
+        "#SAMPLELENGTH",":",  "12.000", ";\n"); // TODO: maybe add chart length in chart info
     add_key_value_template(&mut template,
         "#SELECTABLE",":", "YES", ";\n");
     add_key_value_template(&mut template,

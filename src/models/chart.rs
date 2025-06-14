@@ -6,7 +6,7 @@ use crate::models::{
     hitobjects::HitObjects
 };
 
-// todo: maybe don't use getter_with_clone?
+// TODO: maybe don't use getter_with_clone?
 #[wasm_bindgen]
 #[derive(Debug, Clone)]
 pub struct Chart {

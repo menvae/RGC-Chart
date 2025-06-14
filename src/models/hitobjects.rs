@@ -31,8 +31,8 @@ impl<'a> HitObjectView<'a> {
     }
 }
 
-// todo: add wasm bindings for HitObject
-// todo: add row and object count
+// TODO: add wasm bindings for HitObject
+// TODO: add row and object count
 #[wasm_bindgen]
 #[repr(C)]
 #[derive(Debug, Clone)]
