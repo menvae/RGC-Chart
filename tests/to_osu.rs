@@ -11,3 +11,14 @@ fn sm_to_osu_test() {
         true
     );
 }
+
+#[test]
+fn qua_to_osu_test() {
+    parse_and_convert!(
+        qua_to_osu,
+        "./tests/Maps/quaver/4548_886_Ziqqurat/34785.qua",
+        parse::from_qua,
+        write::to_osu,
+        true
+    );
+}

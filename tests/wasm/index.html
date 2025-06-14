@@ -2,99 +2,7 @@
 <html lang="en">
 <head>
     <title>RGC wasm testing</title>
-    <style>
-        body {
-            font-family: 'Consolas', 'Courier New', monospace;
-            color: #e0e0e0;
-            background: #0e1218;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-            margin: 0;
-        }
-
-        .button {
-            font-size: 14px;
-            padding: 8px 16px;
-            margin: 5px;
-            border: 1px solid #00bcd4;
-            background: #006064;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .button:hover {
-            background: #00838f;
-        }
-
-        .button:active {
-            background: #004d40;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 15px;
-        }
-
-        #consoleContainer {
-            width: 90%;
-            max-width: 900px;
-            height: 500px;
-            background: #121212;
-            border: 1px solid #333;
-            border-radius: 4px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-        }
-
-        #consoleMessages {
-            flex-grow: 1;
-            padding: 10px;
-            overflow-y: auto;
-            font-family: 'Consolas', 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.4;
-            white-space: pre-wrap;
-            -webkit-user-select: text;
-            -moz-user-select: text;
-            -ms-user-select: text;
-            user-select: text;
-        }
-
-        .log {
-            color: #e0e0e0;
-            margin: 0;
-        }
-
-        .error {
-            color: #ff5555;
-            margin: 0;
-            font-weight: bold;
-        }
-
-        #consoleMessages::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        #consoleMessages::-webkit-scrollbar-track {
-            background: #1a1a1a;
-        }
-
-        #consoleMessages::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 4px;
-        }
-
-        #consoleMessages::-webkit-scrollbar-thumb:hover {
-            background: #444;
-        }
-    </style>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="button-container">
@@ -105,131 +13,69 @@
     <div id="consoleContainer">
         <div id="consoleMessages"></div>
     </div>
-
-    <script type="module">
-        window.fetchFromUrl = async function fetchFromUrl(url) {
-            try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return await response.text();
-            } catch (error) {
-                console.error('Error fetching SM chart:', error);
-                throw error;
-            }
-        }
-
-      window.measureTime = async function measureTime(func, ...args) {
-    const func_name = func.name;
-    const start = performance.now();
-    try {
-        return await func(...args);
-    } catch (err) {
-        const contextError = new Error(`[${func_name}] ${err.message}`);
-        throw contextError;
-    } finally {
-        const end = performance.now();
-        const duration = (end - start).toFixed(3);
-        console.log(`${func_name} took: ${duration} milliseconds`);
-    }
-}
-        
-        await initWasm();
-
-        document.getElementById('testJs').addEventListener('click', () => runJsTests());
-
-        async function initWasm() {
-            try {
-                const wasm = await import('./bin/rgc_chart.js');
-                wasm.default();
-                window.wasm = await wasm;
-                console.log("Wasm initialized successfully!");
-            } catch (err) {
-                console.error("Wasm init failed:", err);
-                throw err;
-            }
-        }
-
-
-
-        async function runJsTests() {
-            try {
-                const to_osu = await import('./js/to_osu.js');
-                const to_sm = await import('./js/to_sm.js');
-
-
-                await measureTime(to_osu.sm_to_osu, await fetchFromUrl('/Maps/etterna/Kil_ChineseTea/ct.sm')).catch(err => console.error(err));
-                
-                await measureTime(to_sm.osu_to_sm, await fetchFromUrl('/Maps/osu/1688622_EverGreen/ClumsyRecord - Ever Green feat. Ganeme (FAMoss) [Misfortune Lunatic].osu')).catch(err => console.error(err));
-            } catch (err) {
-                console.error("JS test initialization error:", err);
-            }
-        }
-        
-
-
-        document.getElementById('clearConsole').addEventListener('click', () => {
-            document.getElementById('consoleMessages').innerHTML = "";
-        });
-
-        const consoleMessages = document.getElementById('consoleMessages');
-
-        function scrollToBottom() {
-            consoleMessages.scrollTop = consoleMessages.scrollHeight;
-        }
-
-        
-
-        const observer = new MutationObserver(scrollToBottom);
-        observer.observe(consoleMessages, { childList: true });
-    </script>
-
-    <script>
-        (function() {
-            const consoleDiv = document.getElementById('consoleMessages');
-            
-            const originalConsoleLog = console.log;
-            const originalConsoleError = console.error;
-
-            function formatMessage(message) {
-                if (message instanceof Error) {
-                    const cleanMessage = message.message.replace(/<[^>]*>/g, '');
-                    return `${cleanMessage}\n${message.stack}`;
-                }
-                if (typeof message === "object") {
-                    return JSON.stringify(message, null, 2);
-                }
-                return String(message);
-            }
-
-            function appendMessage(className, message) {
-                const pre = document.createElement('pre');
-                pre.textContent = formatMessage(message);
-                pre.classList.add(className);
-                consoleDiv.appendChild(pre);
-            }
-
-            console.log = function(...args) {
-                originalConsoleLog(...args);
-                args.forEach(arg => appendMessage('log', arg));
-            };
-
-            console.error = function(...args) {
-                originalConsoleError(...args);
-                args.forEach(arg => appendMessage('error', arg));
-            };
-        })();
-
-        window.addEventListener('unhandledrejection', (event) => {
-            console.error('Unhandled promise rejection:', event.reason);
-            event.preventDefault();
-        });
-
-        window.addEventListener('error', (event) => {
-            console.error('Global error:', event.error);
-            event.preventDefault();
-        });
-    </script>
 </body>
+<script defer src="testing.js"></script>
+<script type="module">
+    document.getElementById('clearConsole').addEventListener('click', () => {
+        document.getElementById('consoleMessages').innerHTML = "";
+    });
+
+    const consoleMessages = document.getElementById('consoleMessages');
+
+    function scrollToBottom() {
+        consoleMessages.scrollTop = consoleMessages.scrollHeight;
+    }
+
+    
+
+    const observer = new MutationObserver(scrollToBottom);
+    observer.observe(consoleMessages, { childList: true });
+</script>
+
+<script>
+    (function() {
+        const consoleDiv = document.getElementById('consoleMessages');
+        
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+
+        function formatMessage(message) {
+            if (message instanceof Error) {
+                const cleanMessage = message.message.replace(/<[^>]*>/g, '');
+                return `${cleanMessage}\n${message.stack}`;
+            }
+            if (typeof message === "object") {
+                return JSON.stringify(message, null, 2);
+            }
+            return String(message);
+        }
+
+        function appendMessage(className, message) {
+            const pre = document.createElement('pre');
+            pre.textContent = formatMessage(message);
+            pre.classList.add(className);
+            consoleDiv.appendChild(pre);
+        }
+
+        console.log = function(...args) {
+            originalConsoleLog(...args);
+            args.forEach(arg => appendMessage('log', arg));
+        };
+
+        console.error = function(...args) {
+            originalConsoleError(...args);
+            args.forEach(arg => appendMessage('error', arg));
+        };
+    })();
+
+    window.addEventListener('unhandledrejection', (event) => {
+        console.error('Unhandled promise rejection:', event.reason);
+        event.preventDefault();
+    });
+
+    window.addEventListener('error', (event) => {
+        console.error('Global error:', event.error);
+        event.preventDefault();
+    });
+</script>
 </html>
