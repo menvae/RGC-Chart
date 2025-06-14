@@ -28,7 +28,14 @@ pub mod parse {
     pub fn from_sm(raw_chart: &str) -> Result<crate::Chart, Box<dyn std::error::Error>> {
         parsers::stepmania::from_sm(raw_chart)
     }
+
+    #[inline]
+    pub fn from_qua(raw_chart: &str) -> Result<crate::Chart, Box<dyn std::error::Error>> {
+        parsers::quaver::from_qua(raw_chart)
+    }
 }
+
+// TODO: add wasm quaver support
 
 #[cfg(target_arch = "wasm32")]
 pub mod parse {
@@ -51,6 +58,14 @@ pub mod parse {
             Err(e) => Err(JsError::new(&e.to_string()))
         }
     }
+
+    #[wasm_bindgen]
+    pub fn parse_from_qua(raw_chart: &str) -> Result<crate::Chart, JsError> {
+        match parsers::quaver::from_qua(raw_chart) {
+            Ok(chart) => Ok(chart),
+            Err(e) => Err(JsError::new(&e.to_string()))
+        }
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -65,6 +80,11 @@ pub mod write {
     #[inline]
     pub fn to_sm(chart: &crate::Chart) -> Result<String, Box<dyn std::error::Error>> {
         writers::stepmania::to_sm(chart)
+    }
+
+    #[inline]
+    pub fn to_qua(chart: &crate::Chart) -> Result<String, Box<dyn std::error::Error>> {
+        writers::quaver::to_qua(chart)
     }
 }
 
@@ -85,6 +105,14 @@ pub mod write {
     #[wasm_bindgen]
     pub fn write_to_sm(chart: &crate::Chart) -> Result<String, JsError> {
         match writers::stepmania::to_sm(chart) {
+            Ok(chart) => Ok(chart),
+            Err(e) => Err(JsError::new(&e.to_string()))
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn write_to_qua(chart: &crate::Chart) -> Result<String, JsError> {
+        match writers::quaver::to_qua(chart) {
             Ok(chart) => Ok(chart),
             Err(e) => Err(JsError::new(&e.to_string()))
         }

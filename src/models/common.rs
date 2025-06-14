@@ -23,6 +23,7 @@ def_varied_type_enum!(pub ChartDefaults {
     RAW_NOTES: &'static str => "No Note Data",
     RAW_BPMS: &'static str => "No BPM Data",
     RAW_STOPS: &'static str => "No STOPS Data",
+    RAW_SV: &'static str => "No SV Data",
 
     HITSOUND: [u8; 4] => [0, 0, 0, 0],
 });
