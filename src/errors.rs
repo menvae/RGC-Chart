@@ -11,8 +11,9 @@ pub enum ParseError<GameMode: fmt::Display + 'static> {
 }
 
 #[derive(Debug)]
-pub enum ConversionError<GameMode: fmt::Display + 'static> {
-    ToBeImplemented(GameMode),
+pub enum WriteError<GameMode: fmt::Display + 'static> {
+    InvalidKeyCount(u8, String, String),
+    Unimpl(GameMode),
 }
 
 impl<GameMode: fmt::Display + 'static> fmt::Display for ParseError<GameMode> {
@@ -26,10 +27,11 @@ impl<GameMode: fmt::Display + 'static> fmt::Display for ParseError<GameMode> {
     }
 }
 
-impl<GameMode: fmt::Display + 'static> fmt::Display for ConversionError<GameMode> {
+impl<GameMode: fmt::Display + 'static> fmt::Display for WriteError<GameMode> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::ToBeImplemented(mode) => {unimplemented!()},
+            Self::InvalidKeyCount(key_count, avaibable_key_counts, format) => write!(f, "Failed to write because {key_count}k is not supported, {format} only supports {avaibable_key_counts}"),
+            Self::Unimpl(_gamemode) => {unimplemented!()},
         }
     }
 }
@@ -37,4 +39,4 @@ impl<GameMode: fmt::Display + 'static> fmt::Display for ConversionError<GameMode
 
 
 impl<GameMode: fmt::Debug + fmt::Display + 'static> Error for ParseError<GameMode> {}
-impl<GameMode: fmt::Debug + fmt::Display + 'static> Error for ConversionError<GameMode> {}
+impl<GameMode: fmt::Debug + fmt::Display + 'static> Error for WriteError<GameMode> {}
