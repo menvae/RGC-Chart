@@ -13,7 +13,7 @@ pub struct TimingPointView<'a> {
 }
 
 
-// todo: add wasm bindings for Timings
+// TODO: add wasm bindings for Timings
 #[wasm_bindgen]
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -146,5 +146,15 @@ impl TimingPoints {
     ) -> impl Iterator<Item = (&f32, &f32, &f32, &f32, &bool, &TimingChangeType)> + '_ {
         self.iter_zipped()
             .filter(|(_, _, _, _, _, change_type)| matches!(change_type, TimingChangeType::Sv))
+    }
+
+    pub fn is_bpms_empty(&self) -> bool {
+        !self.change_types.iter()
+            .any(|change_type| matches!(change_type, TimingChangeType::Bpm))
+    }
+
+    pub fn is_sv_empty(&self) -> bool {
+        !self.change_types.iter()
+            .any(|change_type| matches!(change_type, TimingChangeType::Sv))
     }
 }
