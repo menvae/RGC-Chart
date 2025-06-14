@@ -67,7 +67,7 @@ let osu_string = write::to_osu(&chart);
 let sm_string = write::to_sm(&chart);
 
 // Write to Quaver format
-let sm_string = write::to_sm(&chart);
+let qua_string = write::to_qua(&chart);
 ```
 
 #### Chart Structure
