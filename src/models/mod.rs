@@ -3,6 +3,5 @@ pub mod chartinfo;
 pub mod common;
 pub mod metadata;
 pub mod hitobjects;
-pub mod rhythm;
 pub mod timing_points;
 pub mod timeline;

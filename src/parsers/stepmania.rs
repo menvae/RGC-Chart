@@ -5,12 +5,14 @@ use crate::models::common::{
     GameMode,
     KeyType,
 };
-use crate::utils::helpers::{
+use crate::utils::string::{
     remove_comments,
     StrDefaultExtension,
     StrNumericDefaultExtension,
-    to_millis,
     trim_split_iter,
+};
+use crate::utils::time::{
+    to_millis,
     merge_bpm_and_stops,
 };
 use crate::utils::rhythm::{

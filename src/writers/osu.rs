@@ -3,7 +3,8 @@ use crate::models::common::{
     KeyType,
     TimingChangeType,
 };
-use crate::utils::helpers::{add_key_value_template, find_sliderend_time};
+use crate::utils::string::add_key_value_template;
+use crate::utils::time::find_sliderend_time;
 #[allow(unused)]
 use crate::errors;
 

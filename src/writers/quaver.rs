@@ -1,9 +1,7 @@
 use crate::models;
 use crate::models::common::{GameMode, KeyType};
-use crate::utils::helpers::{
-    add_key_value_template,
-    find_sliderend_time,
-};
+use crate::utils::string::add_key_value_template;
+use crate::utils::time::find_sliderend_time;
 use crate::errors;
 
 fn generate_timing_point(time: f32, bpm: f32) -> String {

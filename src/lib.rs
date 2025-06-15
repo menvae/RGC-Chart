@@ -1,5 +1,4 @@
 pub mod errors;
-pub mod helpers;
 pub(crate) use wasm_bindgen::prelude::*;
 
 #[macro_use]
@@ -10,10 +9,7 @@ pub type Chart = crate::models::chart::Chart;
 pub(crate) mod parsers;
 pub(crate) mod writers;
 pub mod models;
-pub mod utils {
-    pub use crate::models::rhythm;
-    pub use crate::helpers;
-}
+pub mod utils;
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod parse {

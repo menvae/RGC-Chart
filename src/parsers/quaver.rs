@@ -5,12 +5,12 @@ use crate::models::common::{
     KeyType,
     TimingChangeType
 };
-use crate::helpers::{
-    parse_key_value,
+use crate::utils::string::{
     remove_comments,
+    parse_key_value,
     trim_split_iter,
     StrDefaultExtension,
-    StrNumericDefaultExtension
+    StrNumericDefaultExtension,
 };
 use crate::utils::rhythm::calculate_beat_from_time;
 use crate::errors;

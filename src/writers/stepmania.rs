@@ -4,11 +4,9 @@ use crate::models::common::{
     KeyType,
     Measure,
 };
-use crate::utils::helpers::{
-    add_key_value_template,
-    approx_eq,
-    to_seconds,
-};
+use crate::utils::math::approx_eq;
+use crate::utils::string::add_key_value_template;
+use crate::utils::time::to_seconds;
 use crate::utils::rhythm::{
     MeasureRange,
     snap_to_nearest_note_type_normed,

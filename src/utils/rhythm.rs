@@ -1,4 +1,5 @@
-use crate::helpers::{thresholded_ceil, to_millis};
+use crate::utils::math::thresholded_ceil;
+use crate::utils::time::to_millis;
 use crate::models::common::TimingChangeType;
 
 #[repr(C)]
