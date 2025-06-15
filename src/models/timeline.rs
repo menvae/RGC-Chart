@@ -1,5 +1,5 @@
-use crate::models::{hitobjects::HitObjects};
-use crate::models::common::KeyType;
+use crate::models::{hitobjects::HitObjects, timing_points::TimingPoints, timing_points::TimingChange};
+use crate::models::common::{KeyType, TimingChangeType};
 use crate::utils::rhythm::calculate_beat_from_time;
 use std::ops::{Index, IndexMut};
 
@@ -11,9 +11,18 @@ pub struct TimelineHitObject<T> {
     pub key_type: KeyType,
 }
 
-pub struct Timeline<T> {
-    timeline: Vec<TimelineHitObject<T>>,
+#[derive(Debug, Clone, Copy)]
+#[repr(C)]
+pub struct TimelineTimingPoint<T> {
+    pub time: T,
+    pub value: f32,
+    pub change_type: TimingChangeType,
+}
+
+pub struct Timeline<Item, T> {
+    timeline: Vec<Item>,
     is_sorted: bool,
+    _phantom: std::marker::PhantomData<T>,
 }
 
 pub trait GenericTime: Copy + PartialOrd {
@@ -21,6 +30,28 @@ pub trait GenericTime: Copy + PartialOrd {
     fn eq_eps(self, other: Self) -> bool;
     fn cmp_sort(a: &Self, b: &Self) -> std::cmp::Ordering;
     fn cmp_search(obj_time: &Self, target_time: &Self) -> std::cmp::Ordering;
+}
+
+pub trait TimelineItem<T> {
+    fn time(&self) -> T;
+}
+
+impl<T> TimelineItem<T> for TimelineHitObject<T>
+where
+    T: Copy,
+{
+    fn time(&self) -> T {
+        self.time
+    }
+}
+
+impl<T> TimelineItem<T> for TimelineTimingPoint<T>
+where
+    T: Copy,
+{
+    fn time(&self) -> T {
+        self.time
+    }
 }
 
 impl GenericTime for i32 {
@@ -67,12 +98,20 @@ impl GenericTime for f32 {
     }
 }
 
-impl<T: Copy + PartialOrd> Timeline<T> {
+pub type HitObjectTimeline<T> = Timeline<TimelineHitObject<T>, T>;
+pub type TimingPointTimeline<T> = Timeline<TimelineTimingPoint<T>, T>;
+
+impl<Item, T> Timeline<Item, T>
+where
+    Item: TimelineItem<T>,
+    T: Copy + PartialOrd,
+{
     #[inline]
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             timeline: Vec::with_capacity(capacity),
             is_sorted: true,
+            _phantom: std::marker::PhantomData,
         }
     }
 
@@ -81,13 +120,14 @@ impl<T: Copy + PartialOrd> Timeline<T> {
         Self {
             timeline: Vec::new(),
             is_sorted: true,
+            _phantom: std::marker::PhantomData,
         }
     }
 
     #[inline]
-    pub fn add(&mut self, timeline_object: TimelineHitObject<T>) {
+    pub fn add(&mut self, timeline_object: Item) {
         if self.is_sorted && !self.timeline.is_empty() {
-            self.is_sorted = timeline_object.time >= self.timeline.last().unwrap().time;
+            self.is_sorted = timeline_object.time() >= self.timeline.last().unwrap().time();
         }
         self.timeline.push(timeline_object);
     }
@@ -113,18 +153,22 @@ impl<T: Copy + PartialOrd> Timeline<T> {
     }
 }
 
-impl<T: GenericTime> Timeline<T> {
+impl<Item, T> Timeline<Item, T>
+where
+    Item: TimelineItem<T>,
+    T: GenericTime,
+{
     #[inline]
-    pub fn add_sorted(&mut self, timeline_object: TimelineHitObject<T>) {
+    pub fn add_sorted(&mut self, timeline_object: Item) {
         let len = self.timeline.len();
         
-        if len == 0 || timeline_object.time >= self.timeline[len - 1].time {
+        if len == 0 || timeline_object.time() >= self.timeline[len - 1].time() {
             self.timeline.push(timeline_object);
             return;
         }
 
         let pos = self.timeline.binary_search_by(|obj| 
-            T::cmp_search(&obj.time, &timeline_object.time)
+            T::cmp_search(&obj.time(), &timeline_object.time())
         ).unwrap_or_else(|pos| pos);
         
         self.timeline.insert(pos, timeline_object);
@@ -133,11 +177,16 @@ impl<T: GenericTime> Timeline<T> {
     #[inline]
     pub fn sort(&mut self) {
         if !self.is_sorted {
-            self.timeline.sort_unstable_by(|a, b| T::cmp_sort(&a.time, &b.time));
+            self.timeline.sort_unstable_by(|a, b| T::cmp_sort(&a.time(), &b.time()));
             self.is_sorted = true;
         }
     }
+}
 
+impl<T> HitObjectTimeline<T>
+where
+    T: GenericTime,
+{
     pub fn to_hitobjects(&mut self, hitobjects: &mut HitObjects,
         offset: f32, key_count: usize,
         bpms_times: &[f32], bpms: &[f32]) {
@@ -188,7 +237,6 @@ impl<T: GenericTime> Timeline<T> {
             
             if i < self.timeline.len() {
                 current_time = self.timeline[i].time;
-                // Reset arrays efficiently
                 unsafe {
                     std::ptr::write_bytes(temp_row.as_mut_ptr(), 0, temp_row.len());
                     std::ptr::write_bytes(temp_hitsounds.as_mut_ptr(), 0, temp_hitsounds.len());
@@ -198,8 +246,51 @@ impl<T: GenericTime> Timeline<T> {
     }
 }
 
-impl<T> IntoIterator for Timeline<T> {
-    type Item = TimelineHitObject<T>;
+impl<T> TimingPointTimeline<T>
+where
+    T: GenericTime,
+{
+    pub fn to_timing_points(&mut self, timing_points: &mut TimingPoints, offset: f32) {
+        if self.timeline.is_empty() {
+            return;
+        }
+
+        self.sort();
+        
+        let mut bpm_times = Vec::new();
+        let mut bpms = Vec::new();
+        
+        for timing_point in &self.timeline {
+            match timing_point.change_type {
+                TimingChangeType::Bpm => {
+                    bpm_times.push(timing_point.time.as_f32());
+                    bpms.push(timing_point.value);
+                }
+                _ => {}
+            }
+        }
+        
+        let len = self.timeline.len();
+        timing_points.times.reserve(len);
+        timing_points.beats.reserve(len);
+        timing_points.changes.reserve(len);
+        
+        for timing_point in &self.timeline {
+            let time = timing_point.time.as_f32();
+            let beat = calculate_beat_from_time(time, offset, (&bpm_times, &bpms));
+            
+            timing_points.times.push(time);
+            timing_points.beats.push(beat);
+            timing_points.changes.push(TimingChange {
+                value: timing_point.value,
+                change_type: timing_point.change_type,
+            });
+        }
+    }
+}
+
+impl<Item, T> IntoIterator for Timeline<Item, T> {
+    type Item = Item;
     type IntoIter = std::vec::IntoIter<Self::Item>;
 
     #[inline]
@@ -208,9 +299,9 @@ impl<T> IntoIterator for Timeline<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a Timeline<T> {
-    type Item = &'a TimelineHitObject<T>;
-    type IntoIter = std::slice::Iter<'a, TimelineHitObject<T>>;
+impl<'a, Item, T> IntoIterator for &'a Timeline<Item, T> {
+    type Item = &'a Item;
+    type IntoIter = std::slice::Iter<'a, Item>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -218,9 +309,9 @@ impl<'a, T> IntoIterator for &'a Timeline<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a mut Timeline<T> {
-    type Item = &'a mut TimelineHitObject<T>;
-    type IntoIter = std::slice::IterMut<'a, TimelineHitObject<T>>;
+impl<'a, Item, T> IntoIterator for &'a mut Timeline<Item, T> {
+    type Item = &'a mut Item;
+    type IntoIter = std::slice::IterMut<'a, Item>;
 
     #[inline]
     fn into_iter(self) -> Self::IntoIter {
@@ -228,8 +319,8 @@ impl<'a, T> IntoIterator for &'a mut Timeline<T> {
     }
 }
 
-impl<T> Index<usize> for Timeline<T> {
-    type Output = TimelineHitObject<T>;
+impl<Item, T> Index<usize> for Timeline<Item, T> {
+    type Output = Item;
 
     #[inline]
     fn index(&self, index: usize) -> &Self::Output {
@@ -237,15 +328,15 @@ impl<T> Index<usize> for Timeline<T> {
     }
 }
 
-impl<T> IndexMut<usize> for Timeline<T> {
+impl<Item, T> IndexMut<usize> for Timeline<Item, T> {
     #[inline]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         &mut self.timeline[index]
     }
 }
 
-impl<T> std::ops::Deref for Timeline<T> {
-    type Target = [TimelineHitObject<T>];
+impl<Item, T> std::ops::Deref for Timeline<Item, T> {
+    type Target = [Item];
 
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -253,7 +344,7 @@ impl<T> std::ops::Deref for Timeline<T> {
     }
 }
 
-impl<T> std::ops::DerefMut for Timeline<T> {
+impl<Item, T> std::ops::DerefMut for Timeline<Item, T> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.timeline

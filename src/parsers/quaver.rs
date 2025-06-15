@@ -12,7 +12,6 @@ use crate::utils::string::{
     StrDefaultExtension,
     StrNumericDefaultExtension,
 };
-use crate::utils::rhythm::calculate_beat_from_time;
 use crate::errors;
 
 
@@ -69,8 +68,8 @@ fn parse_timing_point(raw: &str) -> Result<TimingPoint, Box<dyn std::error::Erro
     let mut time = 0f32;
     let mut timing_point_value = 1.0;
     let mut change_type = TimingChangeType::Bpm;
-
-    for s in raw.split('\n') {
+    
+    for s in raw.trim().split('\n') {
         let (key, value) = parse_key_value(s);
         match key {
             "StartTime" => {
@@ -108,7 +107,7 @@ fn parse_hitobject(raw: &str) -> Result<HitObject, Box<dyn std::error::Error>> {
     let mut lane: usize = 1;
     let mut end_time = 0.0;
 
-    for s in raw.split('\n') {
+    for s in raw.trim().split('\n') {
         let (key, value) = parse_key_value(s);
         match key {
             "StartTime" => {
@@ -142,15 +141,15 @@ fn parse_hitobject(raw: &str) -> Result<HitObject, Box<dyn std::error::Error>> {
 fn process_timing_points(timing_points: &mut models::timing_points::TimingPoints,
     chartinfo: &mut models::chartinfo::ChartInfo,
     raw_bpms: &str, raw_sv: &str) -> Result<(), Box<dyn std::error::Error>> {
-    use models::timing_points::TimingChange;
+    use models::timeline::{TimingPointTimeline, TimelineTimingPoint};
    
     let mut content = String::with_capacity(raw_bpms.len() + raw_sv.len());
 
-    if raw_bpms.trim().is_empty() || raw_bpms == "[]" {
+    if raw_bpms.trim().is_empty() || raw_bpms.trim() == "[]" {
         return Err(Box::new(errors::ParseError::<GameMode>::InvalidChart("No BPM Data Provided.".to_string())));
     }
 
-    if raw_sv.trim().is_empty() || raw_sv == "[]" {
+    if raw_sv.trim().is_empty() || raw_sv.trim() == "[]" {
         content.push_str(raw_bpms);
     } else {
         content.push_str(raw_bpms);
@@ -158,26 +157,27 @@ fn process_timing_points(timing_points: &mut models::timing_points::TimingPoints
         content.push_str(raw_sv);
     }
 
-    let seperated_timing_points = trim_split_iter(content.split("-"), true);
+    let mut timeline: TimingPointTimeline<f32> = TimingPointTimeline::new();
+    let seperated_timing_points = trim_split_iter(content.split("- "), true);
+    
     for timing_point in seperated_timing_points {
         let (time, value, change_type) = parse_timing_point(timing_point)?;
-        timing_points.add(time as f32, 0.0, TimingChange {
-            change_type,
+        timeline.add_sorted(TimelineTimingPoint {
+            time: time as f32,
             value,
+            change_type,
         });
     }
 
-    let start_time = timing_points.times.first().copied().unwrap_or(0.0);
+    let start_time = if timeline.is_empty() {
+        0.0
+    } else {
+        timeline[0].time
+    };
     chartinfo.audio_offset = start_time;
 
-    let bpm_changes = timing_points.bpm_changes_zipped().collect::<Vec<_>>();
-    let bpm_times: Vec<f32> = bpm_changes.iter().map(|(t, _, _)| **t).collect();
-    let bpms: Vec<f32> = bpm_changes.iter().map(|(_, _, change)| change.value).collect();
+    timeline.to_timing_points(timing_points, start_time);
 
-    timing_points.beats.iter_mut().enumerate().for_each(|(i, beat)| {
-        let time = timing_points.times[i];
-        *beat = calculate_beat_from_time(time, start_time, (&bpm_times, &bpms));
-    });
     Ok(())
 }
 
@@ -186,12 +186,12 @@ fn process_notes(hitobjects: &mut models::hitobjects::HitObjects,
     bpms_times: &Vec<f32>,
     bpms: &Vec<f32>,
     raw_notes: &str) -> Result<(), Box<dyn std::error::Error>> {
-        use models::timeline::{Timeline, TimelineHitObject};
+        use models::timeline::{HitObjectTimeline, TimelineHitObject};
         let mut key_count = chartinfo.key_count as usize;
         
-        let mut timeline: Timeline<f32> = Timeline::with_capacity((raw_notes.len() / 3) as usize);
+        let mut timeline: HitObjectTimeline<f32> = HitObjectTimeline::with_capacity((raw_notes.len() / 3) as usize);
 
-        let seperated_hitobjects = trim_split_iter(raw_notes.split("-"), true);
+        let seperated_hitobjects = trim_split_iter(raw_notes.split("- "), true);
         for hitobject in seperated_hitobjects {
         let (object_time, lane, _key_sounds, slider_end_time) = parse_hitobject(hitobject)?;
             if lane > 6 {

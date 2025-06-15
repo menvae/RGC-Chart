@@ -381,10 +381,10 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
             },
             
             HitObjects => {
-                use models::timeline::{Timeline, TimelineHitObject};
+                use models::timeline::{HitObjectTimeline, TimelineHitObject};
 
                 let lines: Vec<&str> = content.lines().map(str::trim).filter(|s| !s.is_empty()).collect();
-                let mut timeline: Timeline<i32> = Timeline::with_capacity(lines.len());
+                let mut timeline: HitObjectTimeline<i32> = HitObjectTimeline::with_capacity(lines.len());
 
                 for line in lines {
                     let hit_object: HitObject = parse_hitobject(line)?;
