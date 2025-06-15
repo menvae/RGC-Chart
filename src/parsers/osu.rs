@@ -264,7 +264,7 @@ fn parse_event(line: &str) -> Result<Event, Box<dyn std::error::Error>> {
 #[allow(clippy::single_match)]
 pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn std::error::Error>> {
     use self::OsuSection::*;
-    use models::{metadata::Metadata, chartinfo::ChartInfo, timing_points::TimingPoints, hitobjects::HitObjects, chart::Chart};
+    use models::{metadata::Metadata, chartinfo::ChartInfo, timing_points::TimingPoints, timing_points::TimingChange, hitobjects::HitObjects, chart::Chart};
 
     let uncommented_chart = remove_comments(raw_chart, "//");
     if uncommented_chart.trim().is_empty() {
@@ -275,9 +275,6 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
     let mut chartinfo = ChartInfo::empty();
     let mut timing_points = TimingPoints::with_capacity(64);
     let mut hitobjects = HitObjects::with_capacity(2048);
-
-    let mut prev_multiplier = 0.0;
-    let mut prev_is_kiai = false;
 
     let mut key_count = 0;
 
@@ -350,35 +347,36 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
                 })?;
             },
             TimingPoints => {
-                let mut prev_bpm = 120.0;
                 for line in content.lines().map(str::trim) {
-                    #[allow(unused)]
-                    let (time, beat_length, meter, sample_set, sample_index, volume, uninherited, effects) = parse_timing_point(line)?;
-                    let kiai = effects == 1 || (prev_is_kiai && effects != 0);
-                    prev_is_kiai = kiai;
-                    if uninherited {
-                        let bpm = beatlength_to_bpm(&beat_length);
-                        prev_bpm = bpm;
-                        timing_points.add(time as f32, prev_multiplier, bpm, 0.0, kiai, TimingChangeType::Bpm);
-                    } else {
-                        let multiplier = beatlength_to_multiplier(&beat_length);
-                        prev_multiplier = multiplier;
-                        timing_points.add(time as f32, multiplier, prev_bpm, 0.0, kiai, TimingChangeType::Sv);
+                        #[allow(unused)]
+                        let (time, beat_length, meter, sample_set, sample_index, volume, uninherited, effects) = parse_timing_point(line)?;
+                        
+                        if uninherited {
+                            let bpm = beatlength_to_bpm(&beat_length);
+                            timing_points.add(time as f32, 0.0, TimingChange {
+                                change_type: TimingChangeType::Bpm,
+                                value: bpm,
+                            });
+                        } else {
+                            let multiplier = beatlength_to_multiplier(&beat_length);
+                            timing_points.add(time as f32, 0.0, TimingChange {
+                                change_type: TimingChangeType::Sv,
+                                value: multiplier,
+                            });
+                        }
                     }
-                }
 
-                let start_time = timing_points.times.first().copied().unwrap_or(0.0);
-                chartinfo.audio_offset = start_time;
-                
-                let bpm_changes = 
-                    timing_points.bpm_changes_zipped().collect::<Vec<_>>();
+                    let start_time = timing_points.times.first().copied().unwrap_or(0.0);
+                    chartinfo.audio_offset = start_time;
 
-                let bpm_times: Vec<f32> = bpm_changes.iter().map(|(t, _, _, _, _, _)| **t).collect();
-                let bpms: Vec<f32> = bpm_changes.iter().map(|(_, _, b, _, _, _)| **b).collect();
-                
-                timing_points.beats.iter_mut().enumerate().for_each(|(i, beat)| {
-                    let time = timing_points.times[i];
-                    *beat = calculate_beat_from_time(time, start_time, (&bpm_times, &bpms));
+                    let bpm_changes = timing_points.bpm_changes_zipped().collect::<Vec<_>>();
+
+                    let bpm_times: Vec<f32> = bpm_changes.iter().map(|(t, _, _)| **t).collect();
+                    let bpms: Vec<f32> = bpm_changes.iter().map(|(_, _, change)| change.value).collect();
+
+                    timing_points.beats.iter_mut().enumerate().for_each(|(i, beat)| {
+                        let time = timing_points.times[i];
+                        *beat = calculate_beat_from_time(time, start_time, (&bpm_times, &bpms));
                 });
             },
             
@@ -422,7 +420,7 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
 
                 timeline.to_hitobjects(&mut hitobjects,
                     chartinfo.audio_offset,chartinfo.key_count as usize,
-                    &timing_points.times, &timing_points.bpms);
+                    &timing_points.times, &timing_points.bpms());
             },
             _ => {},
             

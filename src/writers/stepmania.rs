@@ -138,9 +138,9 @@ pub(crate) fn to_sm(chart: &models::chart::Chart) -> Result<String, Box<dyn std:
     let last_bpm_beat = bpms.last().unwrap().beat;
     for bpm in bpms {
         if bpm.beat < last_bpm_beat {
-            add_key_value_template(&mut bpm_template, &bpm.beat.to_string(), "=", &bpm.bpm.to_string(), ",\n");
+            add_key_value_template(&mut bpm_template, &bpm.beat.to_string(), "=", &bpm.value.to_string(), ",\n");
         } else {
-            add_key_value_template(&mut bpm_template, &bpm.beat.to_string(), "=", &bpm.bpm.to_string(), "\n");
+            add_key_value_template(&mut bpm_template, &bpm.beat.to_string(), "=", &bpm.value.to_string(), "\n");
         }
     }
 

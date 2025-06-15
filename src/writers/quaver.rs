@@ -100,12 +100,11 @@ pub(crate) fn to_qua(chart: &models::chart::Chart) -> Result<String, Box<dyn std
         template.push_str(" []\n");
     } else {
         template.push('\n');
-        for (time, _, bpm, _, _, _) in chart.timing_points.bpm_changes_zipped() {
-            template.push_str(&generate_timing_point(*time, *bpm));
+        for (time, _, change) in chart.timing_points.bpm_changes_zipped() {
+            template.push_str(&generate_timing_point(*time, change.value));
             template.push('\n');
         }
     }
-
 
     // process timing points
     template.push_str("SliderVelocities:");
@@ -113,8 +112,8 @@ pub(crate) fn to_qua(chart: &models::chart::Chart) -> Result<String, Box<dyn std
         template.push_str(" []\n");
     } else {
         template.push('\n');
-        for (time, multiplier, _, _, _, _) in chart.timing_points.sv_changes_zipped() {
-            template.push_str(&generate_sv(*time, *multiplier));
+        for (time, _, change) in chart.timing_points.sv_changes_zipped() {
+            template.push_str(&generate_sv(*time, change.value));
             template.push('\n');
         }
     }

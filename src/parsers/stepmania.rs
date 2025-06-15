@@ -102,13 +102,11 @@ where
 }
 
 fn process_timing_points(bpms_and_stops: &BpmsAndStops, bpms_only: (Vec<f32>, Vec<f32>), start_time: f32) -> models::timing_points::TimingPoints {
-    use models::timing_points::TimingPoints;
+    use models::timing_points::{TimingPoints, TimingChange};
     let mut timing_points = TimingPoints::with_capacity(64);
 
     let (beats, bpms_and_durations, change_types) = bpms_and_stops;
     let (bpms_only_beats, bpms_only_values) = bpms_only;
-
-    let mut prev_bpm = bpms_and_durations[0];
 
     for i in 0..beats.len() {
         let current_beat = beats[i];
@@ -124,23 +122,22 @@ fn process_timing_points(bpms_and_stops: &BpmsAndStops, bpms_only: (Vec<f32>, Ve
             TimingChangeType::Bpm => {
                 timing_points.add(
                     insert_time,
-                    1.0,
-                    bpm_or_duration,
                     current_beat,
-                    false,
-                    TimingChangeType::Bpm
+                    TimingChange {
+                        change_type: TimingChangeType::Bpm,
+                        value: bpm_or_duration,
+                    }
                 );
-                prev_bpm = bpm_or_duration;
             },
             TimingChangeType::Stop => {
                 // TODO: add stop point as is and we unwrap it inside the writer..
                 timing_points.add(
                     insert_time,
-                    0.0, 
-                    prev_bpm,
                     current_beat,
-                    false,
-                    TimingChangeType::Sv
+                    TimingChange {
+                        change_type: TimingChangeType::Sv,
+                        value: 0.0,
+                    }
                 );
 
                 let stop_end_time = insert_time + bpm_or_duration;
@@ -155,11 +152,11 @@ fn process_timing_points(bpms_and_stops: &BpmsAndStops, bpms_only: (Vec<f32>, Ve
 
                 timing_points.add(
                     stop_time,
-                    1.0, 
-                    prev_bpm,
                     stop_end_beat,
-                    false,
-                    TimingChangeType::Sv
+                    TimingChange {
+                        change_type: TimingChangeType::Sv,
+                        value: 1.0,
+                    }
                 );
             },
             _ => {}
@@ -244,8 +241,6 @@ pub(crate) fn from_sm(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn s
     let mut raw_stops = ChartDefaults::RAW_STOPS.to_string();
     let mut raw_notes = ChartDefaults::RAW_NOTES.to_string();
 
-    
-
     process_sections(&uncommented_chart, |header, content| {
         match header {
             "#TITLE" => metadata.title = content.or_default_empty(ChartDefaults::TITLE),
@@ -280,7 +275,6 @@ pub(crate) fn from_sm(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn s
 
     let timing_points = process_timing_points(&bpms_and_stops, bpms_only, chartinfo.audio_offset);
 
-    // chartinfo is passed as a mutable ref since it contains the start offset and we need to update it with the difficulty name from the note data.
     let hitobjects = process_notes(&raw_notes, &mut chartinfo, &bpms_and_stops);
 
     Ok(Chart::new(metadata, chartinfo, timing_points, hitobjects))

@@ -107,14 +107,13 @@ SliderTickRate:1");
             TimingChangeType::Bpm => {
                 template.push_str(&format!("{},{},4,1,0,100,1,0\n",
                     timing_point.time,
-                    bpm_to_beatlength(timing_point.bpm),
+                    bpm_to_beatlength(timing_point.value),
                 ));
             },
             TimingChangeType::Sv => {
-                template.push_str(&format!("{},{},4,1,0,100,0,{}\n",
+                template.push_str(&format!("{},{},4,1,0,100,0,0\n",
                     timing_point.time,
-                    multiplier_to_beatlength(timing_point.multiplier),
-                    if *timing_point.kiai { 1 } else { 0 }
+                    multiplier_to_beatlength(timing_point.value),
                 ));
             },
             _ => {}

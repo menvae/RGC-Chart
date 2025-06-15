@@ -141,13 +141,10 @@ fn parse_hitobject(raw: &str) -> Result<HitObject, Box<dyn std::error::Error>> {
 
 fn process_timing_points(timing_points: &mut models::timing_points::TimingPoints,
     chartinfo: &mut models::chartinfo::ChartInfo,
-    start_multiplier: f32, raw_bpms: &str, raw_sv: &str) -> Result<(), Box<dyn std::error::Error>> {
-    
+    raw_bpms: &str, raw_sv: &str) -> Result<(), Box<dyn std::error::Error>> {
+    use models::timing_points::TimingChange;
    
     let mut content = String::with_capacity(raw_bpms.len() + raw_sv.len());
-    let mut prev_bpm = 1.0;
-    let mut prev_multiplier = start_multiplier;
-    let kiai = false;
 
     if raw_bpms.trim().is_empty() || raw_bpms == "[]" {
         return Err(Box::new(errors::ParseError::<GameMode>::InvalidChart("No BPM Data Provided.".to_string())));
@@ -164,26 +161,23 @@ fn process_timing_points(timing_points: &mut models::timing_points::TimingPoints
     let seperated_timing_points = trim_split_iter(content.split("-"), true);
     for timing_point in seperated_timing_points {
         let (time, value, change_type) = parse_timing_point(timing_point)?;
-        if change_type == TimingChangeType::Bpm {
-            prev_bpm = value;
-            timing_points.add(time as f32, prev_multiplier, value, 0.0, kiai, change_type);
-        } else {
-            prev_multiplier = value;
-            timing_points.add(time as f32, value, prev_bpm, 0.0, kiai, change_type);
-        }
+        timing_points.add(time as f32, 0.0, TimingChange {
+            change_type,
+            value,
+        });
     }
 
     let start_time = timing_points.times.first().copied().unwrap_or(0.0);
     chartinfo.audio_offset = start_time;
-    
+
     let bpm_changes = timing_points.bpm_changes_zipped().collect::<Vec<_>>();
-        let bpm_times: Vec<f32> = bpm_changes.iter().map(|(t, _, _, _, _, _)| **t).collect();
-        let bpms: Vec<f32> = bpm_changes.iter().map(|(_, _, b, _, _, _)| **b).collect();
-        
-        timing_points.beats.iter_mut().enumerate().for_each(|(i, beat)| {
-            let time = timing_points.times[i];
-            *beat = calculate_beat_from_time(time, start_time, (&bpm_times, &bpms));
-        });
+    let bpm_times: Vec<f32> = bpm_changes.iter().map(|(t, _, _)| **t).collect();
+    let bpms: Vec<f32> = bpm_changes.iter().map(|(_, _, change)| change.value).collect();
+
+    timing_points.beats.iter_mut().enumerate().for_each(|(i, beat)| {
+        let time = timing_points.times[i];
+        *beat = calculate_beat_from_time(time, start_time, (&bpm_times, &bpms));
+    });
     Ok(())
 }
 
@@ -247,7 +241,6 @@ pub(crate) fn from_qua(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
     let mut chartinfo = ChartInfo::empty();
     let mut timing_points = TimingPoints::with_capacity(64);
     let mut hitobjects = HitObjects::with_capacity(2048);
-    let mut start_multiplier = 1.0;
 
     let mut raw_bpms = String::new();
     let mut raw_sv = String::new();
@@ -266,7 +259,7 @@ pub(crate) fn from_qua(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
             "Creator" => metadata.creator = content.or_default_empty(ChartDefaults::CREATOR),
             "DifficultyName" => chartinfo.difficulty_name = content.or_default_empty(ChartDefaults::DIFFICULTY_NAME),
             "BPMDoesNotAffectScrollVelocity" => {}, // TODO: maybe do something with these later
-            "InitialScrollVelocity" => start_multiplier = content.or_default_empty_as::<f32>(1.0),
+            "InitialScrollVelocity" => {},
             "CustomAudioSamples" => {},
             "SoundEffects" => {},
             "TimingPoints" => raw_bpms = content.or_default_empty(ChartDefaults::RAW_BPMS),
@@ -278,8 +271,8 @@ pub(crate) fn from_qua(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
         Ok(())
     })?;
 
-    process_timing_points(&mut timing_points, &mut chartinfo, start_multiplier, &raw_bpms, &raw_sv)?;
-    process_notes(&mut hitobjects,&mut chartinfo, &timing_points.times, &timing_points.bpms, &raw_notes)?;
+    process_timing_points(&mut timing_points, &mut chartinfo, &raw_bpms, &raw_sv)?;
+    process_notes(&mut hitobjects,&mut chartinfo, &timing_points.times, &timing_points.bpms(), &raw_notes)?;
 
     Ok(Chart::new(metadata, chartinfo, timing_points, hitobjects))
 }
