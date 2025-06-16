@@ -67,31 +67,21 @@ where
 fn parse_timing_point(raw: &str) -> Result<TimingPoint, Box<dyn std::error::Error>> {
     let mut time = 0f32;
     let mut timing_point_value = 1.0;
-    let mut change_type = TimingChangeType::Bpm;
     
-    for s in raw.trim().split('\n') {
+    for s in raw.split('\n') {
         let (key, value) = parse_key_value(s);
         match key {
             "StartTime" => {
                 time = value.parse::<f32>().map_err(|_| {
                     errors::ParseError::<GameMode>::InvalidChart(
-                        format!("Couldn't parse time in SliderVelocities or TimingPoints: {}", value)
+                        format!("Couldn't parse time in TimingPoints: '{}'", value)
                     )
                 })?;
             },
             "Bpm" => {
-                change_type = TimingChangeType::Bpm;
                 timing_point_value = value.parse::<f32>().map_err(|_| {
                     errors::ParseError::<GameMode>::InvalidChart(
-                        format!("Couldn't parse BPM: {}", value)
-                    )
-                })?;
-            },
-            "Multiplier" => {
-                change_type = TimingChangeType::Sv;
-                timing_point_value = value.parse::<f32>().map_err(|_| {
-                    errors::ParseError::<GameMode>::InvalidChart(
-                        format!("Couldn't parse multiplier: {}", value)
+                        format!("Couldn't parse BPM: '{}'", value)
                     )
                 })?;
             },
@@ -99,7 +89,35 @@ fn parse_timing_point(raw: &str) -> Result<TimingPoint, Box<dyn std::error::Erro
         }
     }
 
-    Ok((time, timing_point_value, change_type))
+    Ok((time, timing_point_value, TimingChangeType::Bpm))
+}
+
+fn parse_sv(raw: &str) -> Result<TimingPoint, Box<dyn std::error::Error>> {
+    let mut time = 0f32;
+    let mut sv_value = 1.0;
+    
+    for s in raw.trim().split('\n') {
+        let (key, value) = parse_key_value(s);
+        match key {
+            "StartTime" => {
+                time = value.parse::<f32>().map_err(|_| {
+                    errors::ParseError::<GameMode>::InvalidChart(
+                        format!("Couldn't parse time in SliderVelocities: '{}'", value)
+                    )
+                })?;
+            },
+            "Multiplier" => {
+                sv_value = value.parse::<f32>().map_err(|_| {
+                    errors::ParseError::<GameMode>::InvalidChart(
+                        format!("Couldn't parse multiplier: '{}'", value)
+                    )
+                })?;
+            },
+            _ => {},
+        }
+    }
+
+    Ok((time, sv_value, TimingChangeType::Sv))
 }
 
 fn parse_hitobject(raw: &str) -> Result<HitObject, Box<dyn std::error::Error>> {
@@ -113,21 +131,21 @@ fn parse_hitobject(raw: &str) -> Result<HitObject, Box<dyn std::error::Error>> {
             "StartTime" => {
                 time = value.parse::<f32>().map_err(|_| {
                     errors::ParseError::<GameMode>::InvalidChart(
-                        format!("Couldn't parse time in HitObjects: {}", value)
+                        format!("Couldn't parse time in HitObjects: '{}'", value)
                     )
                 })?;
             },
             "Lane" => {
                 lane = value.parse::<usize>().map_err(|_| {
                     errors::ParseError::<GameMode>::InvalidChart(
-                        format!("Couldn't Lane: {}", value)
+                        format!("Couldn't Lane: '{}'", value)
                     )
                 })?;
             },
             "EndTime" => {
                 end_time = value.parse::<f32>().map_err(|_| {
                     errors::ParseError::<GameMode>::InvalidChart(
-                        format!("Couldn't parse end_time in HitObjects: {}", value)
+                        format!("Couldn't parse end_time in HitObjects: '{}'", value)
                     )
                 })?;
             }
@@ -138,27 +156,18 @@ fn parse_hitobject(raw: &str) -> Result<HitObject, Box<dyn std::error::Error>> {
     Ok((time, lane - 1, vec![0u8], end_time))
 }
 
-fn process_timing_points(timing_points: &mut models::timing_points::TimingPoints,
+fn process_timing_points(timeline: &mut models::timeline::TimingPointTimeline::<f32>,
     chartinfo: &mut models::chartinfo::ChartInfo,
-    raw_bpms: &str, raw_sv: &str) -> Result<(), Box<dyn std::error::Error>> {
-    use models::timeline::{TimingPointTimeline, TimelineTimingPoint};
-   
-    let mut content = String::with_capacity(raw_bpms.len() + raw_sv.len());
+    raw_bpms: &str) -> Result<(), Box<dyn std::error::Error>> {
+    use models::timeline::TimelineTimingPoint;
 
-    if raw_bpms.trim().is_empty() || raw_bpms.trim() == "[]" {
-        return Err(Box::new(errors::ParseError::<GameMode>::InvalidChart("No BPM Data Provided.".to_string())));
+    let trimmed_raw = raw_bpms.trim();
+
+    if trimmed_raw == "[]" || trimmed_raw.is_empty() {
+        return Err(Box::new( errors::ParseError::InvalidChart::<GameMode>("No BPM data provided in the chart".to_string()) ))
     }
-
-    if raw_sv.trim().is_empty() || raw_sv.trim() == "[]" {
-        content.push_str(raw_bpms);
-    } else {
-        content.push_str(raw_bpms);
-        content.push('\n');
-        content.push_str(raw_sv);
-    }
-
-    let mut timeline: TimingPointTimeline<f32> = TimingPointTimeline::new();
-    let seperated_timing_points = trim_split_iter(content.split("- "), true);
+    
+    let seperated_timing_points = trim_split_iter(raw_bpms.split("- "), true);
     
     for timing_point in seperated_timing_points {
         let (time, value, change_type) = parse_timing_point(timing_point)?;
@@ -174,10 +183,31 @@ fn process_timing_points(timing_points: &mut models::timing_points::TimingPoints
     } else {
         timeline[0].time
     };
+
     chartinfo.audio_offset = start_time;
+    Ok(())
+}
 
-    timeline.to_timing_points(timing_points, start_time);
+fn process_sv(timeline: &mut models::timeline::TimingPointTimeline::<f32>,
+    raw_sv: &str) -> Result<(), Box<dyn std::error::Error>> {
+    use models::timeline::TimelineTimingPoint;
 
+    let trimmed_raw = raw_sv.trim();
+
+    if trimmed_raw == "[]" || trimmed_raw.is_empty() {
+        return Ok(());
+    }
+    
+    let seperated_timing_points = trim_split_iter(raw_sv.split("- "), true);
+    
+    for timing_point in seperated_timing_points {
+        let (time, value, change_type) = parse_sv(timing_point)?;
+        timeline.add_sorted(TimelineTimingPoint {
+            time: time as f32,
+            value,
+            change_type,
+        });
+    }
     Ok(())
 }
 
@@ -230,7 +260,14 @@ fn process_notes(hitobjects: &mut models::hitobjects::HitObjects,
 }
 
 pub(crate) fn from_qua(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn std::error::Error>>  {
-    use models::{metadata::Metadata, chartinfo::ChartInfo, timing_points::TimingPoints, hitobjects::HitObjects, chart::Chart};
+    use models::{
+        metadata::Metadata,
+        chartinfo::ChartInfo,
+        timing_points::TimingPoints,
+        timeline::TimingPointTimeline,
+        hitobjects::HitObjects,
+        chart::Chart
+    };
 
     let uncommented_chart = remove_comments(raw_chart, "#");
     if uncommented_chart.trim().is_empty() {
@@ -241,10 +278,7 @@ pub(crate) fn from_qua(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
     let mut chartinfo = ChartInfo::empty();
     let mut timing_points = TimingPoints::with_capacity(64);
     let mut hitobjects = HitObjects::with_capacity(2048);
-
-    let mut raw_bpms = String::new();
-    let mut raw_sv = String::new();
-    let mut raw_notes = String::new();
+    let mut timeline: TimingPointTimeline<f32> = TimingPointTimeline::with_capacity(64);
 
     process_sections(&uncommented_chart, |header, content| {
         match header {
@@ -262,17 +296,16 @@ pub(crate) fn from_qua(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
             "InitialScrollVelocity" => {},
             "CustomAudioSamples" => {},
             "SoundEffects" => {},
-            "TimingPoints" => raw_bpms = content.or_default_empty(ChartDefaults::RAW_BPMS),
-            "SliderVelocities" => raw_sv = content.or_default_empty(ChartDefaults::RAW_SV),
-            "HitObjects" => raw_notes = content.to_string(), // TODO: this is really bad because we're copying the whole note data which is very bad for maps with a lot of objects,
-                                                            //need to make this somehow not copy without making rust mad..
+            "TimingPoints" => process_timing_points(&mut timeline, &mut chartinfo, content)?,
+            "SliderVelocities" => process_sv(&mut timeline, content)?,
+            "HitObjects" => {
+                timeline.to_timing_points(&mut timing_points, chartinfo.audio_offset);
+                process_notes(&mut hitobjects,&mut chartinfo, &timing_points.times, &timing_points.bpms(), content)?;
+            }
             _ => {},
         }
         Ok(())
-    })?;
-
-    process_timing_points(&mut timing_points, &mut chartinfo, &raw_bpms, &raw_sv)?;
-    process_notes(&mut hitobjects,&mut chartinfo, &timing_points.times, &timing_points.bpms(), &raw_notes)?;
+    })?;    
 
     Ok(Chart::new(metadata, chartinfo, timing_points, hitobjects))
 }
