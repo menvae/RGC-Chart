@@ -49,7 +49,7 @@ let osu_chart = parse::from_osu(raw_osu_string).expect("Failed to parse osu! cha
 let sm_chart = parse::from_sm(raw_sm_string).expect("Failed to parse Stepmania chart");
 
 // Parse a Quaver chart from string
-let qua_chart = parse::from_sm(raw_sm_string).expect("Failed to parse Quaver chart");
+let qua_chart = parse::from_qua(raw_qua_string).expect("Failed to parse Quaver chart");
 ```
 
 #### Writing Charts
@@ -169,7 +169,7 @@ const chart = rgcChart.parse_from_osu(rawOsuString);
 const chart = rgcChart.parse_from_sm(rawSmString);
 
 // Parse a Quaver chart from string
-const chart = rgcChart.parse_from_qua(rawSmString);
+const chart = rgcChart.parse_from_qua(rawQuaString);
 ```
 
 #### Writing Charts
