@@ -4,7 +4,7 @@ repository = "https://github.com/menvae/RGC-Chart"
 authors = ["menvae"]
 description = "A library for parsing and writing rhythm game charts."
 license = "MIT"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 exclude = [
     "tests/*",
