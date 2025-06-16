@@ -108,11 +108,8 @@ The `TimingPoints` struct contains all the timing information such as bpm change
 ```rust
 pub struct TimingPoints {
     pub times: Vec<f32>,
-    pub bpms: Vec<f32>,
     pub beats: Vec<f32>,
-    pub multipliers: Vec<f32>,
-    pub kiais: Vec<bool>,
-    pub change_types: Vec<TimingChangeType>,
+    pub changes: Vec<TimingChange>,
 }
 ```
 The `HitObjects` struct contains all the hitobject information.
