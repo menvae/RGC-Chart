@@ -1,7 +1,7 @@
 mod test_stuff;
 use test_stuff::*;
 
-// #[test]
+#[test]
 fn sm_to_osu_test() {
     parse_and_convert!(
         sm_to_osu,
