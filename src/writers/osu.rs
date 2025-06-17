@@ -126,7 +126,7 @@ SliderTickRate:1");
     #[allow(unused)]
     for (row_idx, (time, beat, hitsounds, row)) in hitobjects.iter().enumerate() {
         for (i, key_type) in row.iter().enumerate() {
-            let coords = column_to_coords(i, chart.chartinfo.key_count as usize);
+            let coords = column_to_coords(i+1, chart.chartinfo.key_count as usize);
             match key_type {
                 KeyType::Normal => {
                     template.push_str(&format!("{},192,{},1,0,0:0:0:0:\n", coords, **time as i32));

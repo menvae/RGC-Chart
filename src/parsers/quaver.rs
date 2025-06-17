@@ -285,7 +285,15 @@ pub(crate) fn from_qua(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
             "AudioFile" => chartinfo.song_path = content.or_default_empty(ChartDefaults::SONG_PATH),
             "SongPreviewTime" => chartinfo.preview_time = content.or_default_empty_as::<f32>(*ChartDefaults::PREVIEW_TIME),
             "BackgroundFile" => chartinfo.bg_path = content.or_default_empty(ChartDefaults::SONG_PATH),
-            "Mode" => {chartinfo.key_count = content.or_default_empty_as::<u8>(*ChartDefaults::KEY_COUNT)},
+            "Mode" => {
+                if content == "Keys4" {
+                    chartinfo.key_count = 4;
+                } else if content == "Keys7" {
+                    chartinfo.key_count = 7;
+                } else {
+                    return Err( Box::new(errors::ParseError::<GameMode>::InvalidChart("Quaver only supports Keys4 and Keys7 for Mode".to_string())) );
+                }
+            },
             "Title" => metadata.title = content.or_default_empty(ChartDefaults::TITLE),
             "Artist" => metadata.artist = content.or_default_empty(ChartDefaults::ARTIST),
             "Source" => metadata.source = content.or_default_empty(ChartDefaults::SOURCE),
