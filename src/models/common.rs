@@ -15,8 +15,8 @@ def_varied_type_enum!(pub ChartDefaults {
     DIFFICULTY_NAME: &'static str => "Unknown Difficulty",
     BG_PATH: &'static str => "Unknown Background Path",
     SONG_PATH: &'static str => "Unknown Song File Path",
-    AUDIO_OFFSET: &'static f32 => &0.0,
-    PREVIEW_TIME: &'static f32 => &0.0,
+    AUDIO_OFFSET: &'static i32 => &0,
+    PREVIEW_TIME: &'static i32 => &0,
     OVERALL_DIFFICULTY: &'static f32 => &7.2,
     KEY_COUNT: &'static u8 => &4,
     

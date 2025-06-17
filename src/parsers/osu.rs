@@ -353,25 +353,25 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
                         
                         if uninherited {
                             let bpm = beatlength_to_bpm(&beat_length);
-                            timing_points.add(time as f32, 0.0, TimingChange {
+                            timing_points.add(time, 0.0, TimingChange {
                                 change_type: TimingChangeType::Bpm,
                                 value: bpm,
                             });
                         } else {
                             let multiplier = beatlength_to_multiplier(&beat_length);
-                            timing_points.add(time as f32, 0.0, TimingChange {
+                            timing_points.add(time, 0.0, TimingChange {
                                 change_type: TimingChangeType::Sv,
                                 value: multiplier,
                             });
                         }
                     }
 
-                    let start_time = timing_points.times.first().copied().unwrap_or(0.0);
+                    let start_time = timing_points.times.first().copied().unwrap_or(0);
                     chartinfo.audio_offset = start_time;
 
                     let bpm_changes = timing_points.bpm_changes_zipped().collect::<Vec<_>>();
 
-                    let bpm_times: Vec<f32> = bpm_changes.iter().map(|(t, _, _)| **t).collect();
+                    let bpm_times: Vec<i32> = bpm_changes.iter().map(|(t, _, _)| **t).collect();
                     let bpms: Vec<f32> = bpm_changes.iter().map(|(_, _, change)| change.value).collect();
 
                     timing_points.beats.iter_mut().enumerate().for_each(|(i, beat)| {
@@ -384,7 +384,7 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
                 use models::timeline::{HitObjectTimeline, TimelineHitObject};
 
                 let lines: Vec<&str> = content.lines().map(str::trim).filter(|s| !s.is_empty()).collect();
-                let mut timeline: HitObjectTimeline<i32> = HitObjectTimeline::with_capacity(lines.len());
+                let mut timeline: HitObjectTimeline = HitObjectTimeline::with_capacity(lines.len());
 
                 for line in lines {
                     let hit_object: HitObject = parse_hitobject(line)?;

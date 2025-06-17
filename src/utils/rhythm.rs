@@ -37,7 +37,7 @@ pub const NOTE_TYPES: [f32; 9] = [
 
 pub fn snap_to_nearest_note_type_normed(beat: f32) -> f32 {
     let mut min_diff  = f32::MAX;
-    let mut nearest_note_tyoe  = NOTE_TYPES[0];
+    let mut nearest_note_type  = NOTE_TYPES[0];
     
     let candidates = [
         (NOTE_TYPES[0], (NOTE_TYPES[0] - beat).abs()),
@@ -54,17 +54,17 @@ pub fn snap_to_nearest_note_type_normed(beat: f32) -> f32 {
     for (note_type, diff) in candidates {
         if diff < min_diff {
             min_diff = diff;
-            nearest_note_tyoe = note_type;
+            nearest_note_type = note_type;
         }
     }
     
-    nearest_note_tyoe
+    nearest_note_type
 }
 
 pub fn calculate_beat_from_time(
-    time: f32,
-    start_time: f32,
-    timing_points: (&[f32], &[f32]), // (bpm_times, bpms)
+    time: i32,
+    start_time: i32,
+    timing_points: (&[i32], &[f32]), // (bpm_times, bpms)
 ) -> f32 {
     let (bpm_times, bpms) = timing_points;
 
@@ -94,26 +94,26 @@ pub fn calculate_beat_from_time(
         let bpm_change_time = bpm_times[i];
         let new_bpm = bpms[i];
         let segment_duration = bpm_change_time - prev_time;
-        total_beats += segment_duration * current_bpm / 60_000.0;
+        total_beats += segment_duration as f32 * current_bpm / 60_000.0;
         prev_time = bpm_change_time;
         current_bpm = new_bpm;
     }
 
     let current_bpm_segment = time - prev_time;
-    total_beats += current_bpm_segment * current_bpm / 60_000.0;
+    total_beats += current_bpm_segment as f32 * current_bpm / 60_000.0;
 
     thresholded_ceil(total_beats, 0.95) // I hate floats
 }
 
 pub fn calculate_time_from_beat(
     beat: f32,
-    start_time: f32,
+    start_time: i32,
     timing_points: (&[f32], &[f32], &[TimingChangeType]), // (bpm_beats, bpms/durations, timing_change_types)
-) -> f32 {
+) -> i32 {
     let (bpm_beats, bpm_or_duration, change_types) = timing_points;
 
     if bpm_beats.is_empty() || bpm_or_duration.is_empty() || bpm_beats.len() != bpm_or_duration.len() {
-        return -1.0;
+        return -1;
     }
 
     if beat < 0.0 {
@@ -133,7 +133,7 @@ pub fn calculate_time_from_beat(
     let start_idx = bpm_beats.partition_point(|&b| b <= 0.0);
     let end_idx = bpm_beats.partition_point(|&b| b <= beat);
 
-    let mut total_time = start_time;
+    let mut total_time = start_time as f32;
     let mut prev_beat = 0.0;
     let mut current_bpm = initial_bpm;
 
@@ -163,5 +163,5 @@ pub fn calculate_time_from_beat(
         total_time += current_segment_beats * (60000.0 / current_bpm);
     }
 
-    total_time
+    total_time as i32
 }

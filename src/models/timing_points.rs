@@ -5,7 +5,7 @@ use crate::models::common::TimingChangeType;
 #[derive(Debug)]
 #[repr(C, align(8))]
 pub struct TimingPointView<'a> {
-    pub time: &'a f32,
+    pub time: &'a i32,
     pub beat: &'a f32,
     pub change_type: TimingChangeType,
     pub value: &'a f32,
@@ -23,7 +23,7 @@ pub struct TimingChange {
 #[derive(Debug, Clone)]
 pub struct TimingPoints {
     #[wasm_bindgen(skip)]
-    pub times: Vec<f32>,
+    pub times: Vec<i32>,
     #[wasm_bindgen(skip)]
     pub beats: Vec<f32>,
     #[wasm_bindgen(skip)]
@@ -40,7 +40,7 @@ impl TimingPoints {
     }
 
     pub fn new(
-        times: Vec<f32>,
+        times: Vec<i32>,
         beats: Vec<f32>,
         changes: Vec<TimingChange>,
     ) -> Self {
@@ -53,7 +53,7 @@ impl TimingPoints {
 
     pub fn add(
         &mut self,
-        time: f32,
+        time: i32,
         beat: f32,
         change: TimingChange,
     ) {
@@ -65,7 +65,7 @@ impl TimingPoints {
     /// time, beat, change
     pub fn iter_zipped(
         &self,
-    ) -> impl Iterator<Item = (&f32, &f32, &TimingChange)> {
+    ) -> impl Iterator<Item = (&i32, &f32, &TimingChange)> {
         self.times
             .iter()
             .zip(self.beats.iter())
@@ -97,7 +97,7 @@ impl TimingPoints {
     /// time, beat, change
     pub fn bpm_changes_zipped(
         &self,
-    ) -> impl Iterator<Item = (&f32, &f32, &TimingChange)> + '_ {
+    ) -> impl Iterator<Item = (&i32, &f32, &TimingChange)> + '_ {
         self.iter_zipped()
             .filter(|(_, _, change)| matches!(change.change_type, TimingChangeType::Bpm))
     }
@@ -105,7 +105,7 @@ impl TimingPoints {
     /// time, beat, change
     pub fn sv_changes_zipped(
         &self,
-    ) -> impl Iterator<Item = (&f32, &f32, &TimingChange)> + '_ {
+    ) -> impl Iterator<Item = (&i32, &f32, &TimingChange)> + '_ {
         self.iter_zipped()
             .filter(|(_, _, change)| matches!(change.change_type, TimingChangeType::Sv))
     }

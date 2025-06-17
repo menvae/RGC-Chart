@@ -23,7 +23,7 @@ pub fn merge_bpm_and_stops(
     let mut types = Vec::new();
 
     match (bpms_beats.is_empty(), stops_beats.is_empty()) {
-        (true, true) => (), // All vectors remain empty
+        (true, true) => (),
         (true, false) => {
             for i in 0..stops_beats.len() {
                 beats.push(stops_beats[i]);
@@ -70,10 +70,10 @@ pub fn merge_bpm_and_stops(
 pub fn find_sliderend_time(
     start_idx: usize,
     key_idx: usize,
-    hitobjects: &[(&f32, &f32, &Vec<u8>, &Row)],
-) -> f32 {
+    hitobjects: &[(&i32, &f32, &Vec<u8>, &Row)],
+) -> i32 {
     if start_idx >= hitobjects.len() {
-        return 0.0;
+        return 0;
     }
 
     let start_time = hitobjects[start_idx].0;

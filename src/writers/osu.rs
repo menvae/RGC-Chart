@@ -121,7 +121,7 @@ SliderTickRate:1");
     }
 
     template.push_str("\n[HitObjects]\n");
-    let hitobjects: Vec<(&f32, &f32, &Vec<u8>, &Vec<KeyType>)> = chart.hitobjects.iter_zipped().collect();
+    let hitobjects: Vec<(&i32, &f32, &Vec<u8>, &Vec<KeyType>)> = chart.hitobjects.iter_zipped().collect();
     template.reserve(hitobjects.len() * key_count as usize);
     #[allow(unused)]
     for (row_idx, (time, beat, hitsounds, row)) in hitobjects.iter().enumerate() {

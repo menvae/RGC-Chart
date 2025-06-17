@@ -101,12 +101,12 @@ where
     }
 }
 
-fn process_timing_points(bpms_and_stops: &BpmsAndStops, bpms_only: (Vec<f32>, Vec<f32>), start_time: f32) -> models::timing_points::TimingPoints {
+fn process_timing_points(bpms_and_stops: &BpmsAndStops, bpms_only: (Vec<f32>, Vec<f32>), start_time: i32) -> models::timing_points::TimingPoints {
     use models::timing_points::{TimingPoints, TimingChange};
     let mut timing_points = TimingPoints::with_capacity(64);
 
     let (beats, bpms_and_durations, change_types) = bpms_and_stops;
-    let (bpms_only_beats, bpms_only_values) = bpms_only;
+    let (_bpms_only_beats, bpms_only_values) = bpms_only;
 
     for i in 0..beats.len() {
         let current_beat = beats[i];
@@ -140,15 +140,21 @@ fn process_timing_points(bpms_and_stops: &BpmsAndStops, bpms_only: (Vec<f32>, Ve
                     }
                 );
 
-                let stop_end_time = insert_time + bpm_or_duration;
+                let stop_end_time = insert_time as f32 + bpm_or_duration;
+
+                // TODO: really hacky and ugly way, this is a temp solution, use TimeingPointsTImeline later
+                let bpm_times_vec = timing_points.bpm_changes_zipped()
+                .map(|(t, _, _)| *t)
+                .collect::<Vec<i32>>();
+                let bpm_times: &[i32] = &bpm_times_vec;  // Now you have a slice
                 
                 let stop_end_beat = calculate_beat_from_time(
-                    stop_end_time,
+                    stop_end_time as i32,
                     start_time,
-                    (&bpms_only_beats, &bpms_only_values)
+                    (&bpm_times, &bpms_only_values)
                 );
 
-                let stop_time = insert_time + to_millis(bpm_or_duration);
+                let stop_time = insert_time + to_millis(bpm_or_duration) as i32;
 
                 timing_points.add(
                     stop_time,
@@ -210,7 +216,7 @@ fn process_notes(raw_note_data: &str, chartinfo: &mut models::chartinfo::ChartIn
             }
             
             hitobjects.add_hitobject(
-                row_time.round(),
+                row_time,
                 row_beat,
                 vec![0; key_count],
                 keys
@@ -253,8 +259,8 @@ pub(crate) fn from_sm(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn s
             "#CREDIT" => metadata.creator = content.or_default_empty(ChartDefaults::CREATOR),
             "#BACKGROUND"=> chartinfo.bg_path = content.or_default_empty(ChartDefaults::BG_PATH),
             "#MUSIC" => chartinfo.song_path = content.or_default_empty(ChartDefaults::SONG_PATH),
-            "#OFFSET" => chartinfo.audio_offset = -to_millis(content.or_default_empty_as::<f32>(*ChartDefaults::AUDIO_OFFSET)),
-            "#SAMPLESTART" => chartinfo.preview_time = to_millis(content.or_default_empty_as::<f32>(*ChartDefaults::PREVIEW_TIME)),
+            "#OFFSET" => chartinfo.audio_offset = -to_millis(content.or_default_empty_as(*ChartDefaults::AUDIO_OFFSET as f32)) as i32,
+            "#SAMPLESTART" => chartinfo.preview_time = to_millis(content.or_default_empty_as(*ChartDefaults::PREVIEW_TIME as f32)) as i32,
             "#BPMS" => {
                 raw_bpms = content.or_default_empty(ChartDefaults::RAW_BPMS);
                 bpms = parse_beats(&raw_bpms);

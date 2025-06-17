@@ -4,7 +4,7 @@ use crate::utils::string::add_key_value_template;
 use crate::utils::time::find_sliderend_time;
 use crate::errors;
 
-fn generate_timing_point(time: f32, bpm: f32) -> String {
+fn generate_timing_point(time: i32, bpm: f32) -> String {
     let time_str = time.to_string();
     let bpm_str = bpm.to_string();
     let mut result = String::with_capacity(time_str.len() + bpm_str.len() + 21);
@@ -16,7 +16,7 @@ fn generate_timing_point(time: f32, bpm: f32) -> String {
     result
 }
 
-fn generate_sv(time: f32, multiplier: f32) -> String {
+fn generate_sv(time: i32, multiplier: f32) -> String {
     let time_str = time.to_string();
     let multiplier_str = multiplier.to_string();
     let mut result = String::with_capacity(time_str.len() + multiplier_str.len() + 28);
@@ -28,7 +28,7 @@ fn generate_sv(time: f32, multiplier: f32) -> String {
     result
 }
 
-fn generate_hitobject(time: f32, slider_end_time: Option<f32>, column: usize) -> String {
+fn generate_hitobject(time: i32, slider_end_time: Option<i32>, column: usize) -> String {
     let is_slider = slider_end_time.is_some();
     let time_str = time.to_string();
     let column_str = (column + 1).to_string();
@@ -120,7 +120,7 @@ pub(crate) fn to_qua(chart: &models::chart::Chart) -> Result<String, Box<dyn std
 
 
     // process hitobjects
-    let hitobjects: Vec<(&f32, &f32, &Vec<u8>, &Vec<KeyType>)> = chart.hitobjects.iter_zipped().collect();
+    let hitobjects: Vec<(&i32, &f32, &Vec<u8>, &Vec<KeyType>)> = chart.hitobjects.iter_zipped().collect();
     template.reserve(hitobjects.len() * key_count as usize);
     template.push_str("HitObjects:");
     if chart.timing_points.is_bpms_empty() {

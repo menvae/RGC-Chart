@@ -7,7 +7,7 @@ use crate::models::common::{
 #[derive(Debug)]
 #[repr(C, align(64))]
 pub struct HitObjectView<'a> {
-    pub time: &'a f32,
+    pub time: &'a i32,
     pub row: &'a [KeyType],
     pub beat: &'a f32,
     pub hitsound: &'a [u8],
@@ -16,7 +16,7 @@ pub struct HitObjectView<'a> {
 
 impl<'a> HitObjectView<'a> {
     pub fn new(
-        time: &'a f32,
+        time: &'a i32,
         beat: &'a f32,
         key: &'a [KeyType],
         hitsound: &'a [u8],
@@ -38,7 +38,7 @@ impl<'a> HitObjectView<'a> {
 #[derive(Debug, Clone)]
 pub struct HitObjects {
     #[wasm_bindgen(skip)]
-    pub times: Vec<f32>,
+    pub times: Vec<i32>,
     #[wasm_bindgen(skip)]
     pub rows: Vec<Row>,
     #[wasm_bindgen(skip)]
@@ -58,7 +58,7 @@ impl HitObjects {
         }
     }
 
-    pub fn new(times: Vec<f32>, hitsounds: Vec<Vec<u8>>, rows: Vec<Row>, beats: Vec<f32>) -> Self {
+    pub fn new(times: Vec<i32>, hitsounds: Vec<Vec<u8>>, rows: Vec<Row>, beats: Vec<f32>) -> Self {
         Self {
             times,
             hitsounds,
@@ -68,7 +68,7 @@ impl HitObjects {
     }
 
     #[inline]
-    pub fn add_hitobject(&mut self, time: f32, beat: f32, hitsound: Vec<u8>, row: Row) {
+    pub fn add_hitobject(&mut self, time: i32, beat: f32, hitsound: Vec<u8>, row: Row) {
         if row.iter().all(|&note| note == KeyType::Empty) { return; }
         self.times.push(time);
         self.hitsounds.push(hitsound);
@@ -78,7 +78,7 @@ impl HitObjects {
 
 
     /// time, beat, hitsounds, row
-    pub fn iter_zipped(&self) -> impl Iterator<Item = (&f32, &f32, &Vec<u8>, &Row)> {
+    pub fn iter_zipped(&self) -> impl Iterator<Item = (&i32, &f32, &Vec<u8>, &Row)> {
         self.times
             .iter()
             .zip(self.beats.iter())

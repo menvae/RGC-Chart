@@ -156,7 +156,7 @@ fn parse_hitobject(raw: &str) -> Result<HitObject, Box<dyn std::error::Error>> {
     Ok((time, lane - 1, vec![0u8], end_time))
 }
 
-fn process_timing_points(timeline: &mut models::timeline::TimingPointTimeline::<f32>,
+fn process_timing_points(timeline: &mut models::timeline::TimingPointTimeline,
     chartinfo: &mut models::chartinfo::ChartInfo,
     raw_bpms: &str) -> Result<(), Box<dyn std::error::Error>> {
     use models::timeline::TimelineTimingPoint;
@@ -172,14 +172,14 @@ fn process_timing_points(timeline: &mut models::timeline::TimingPointTimeline::<
     for timing_point in seperated_timing_points {
         let (time, value, change_type) = parse_timing_point(timing_point)?;
         timeline.add_sorted(TimelineTimingPoint {
-            time: time as f32,
+            time: time as i32,
             value,
             change_type,
         });
     }
 
     let start_time = if timeline.is_empty() {
-        0.0
+        0
     } else {
         timeline[0].time
     };
@@ -188,7 +188,7 @@ fn process_timing_points(timeline: &mut models::timeline::TimingPointTimeline::<
     Ok(())
 }
 
-fn process_sv(timeline: &mut models::timeline::TimingPointTimeline::<f32>,
+fn process_sv(timeline: &mut models::timeline::TimingPointTimeline,
     raw_sv: &str) -> Result<(), Box<dyn std::error::Error>> {
     use models::timeline::TimelineTimingPoint;
 
@@ -203,7 +203,7 @@ fn process_sv(timeline: &mut models::timeline::TimingPointTimeline::<f32>,
     for timing_point in seperated_timing_points {
         let (time, value, change_type) = parse_sv(timing_point)?;
         timeline.add_sorted(TimelineTimingPoint {
-            time: time as f32,
+            time: time as i32,
             value,
             change_type,
         });
@@ -213,13 +213,13 @@ fn process_sv(timeline: &mut models::timeline::TimingPointTimeline::<f32>,
 
 fn process_notes(hitobjects: &mut models::hitobjects::HitObjects,
     chartinfo: &mut models::chartinfo::ChartInfo,
-    bpms_times: &Vec<f32>,
+    bpms_times: &Vec<i32>,
     bpms: &Vec<f32>,
     raw_notes: &str) -> Result<(), Box<dyn std::error::Error>> {
         use models::timeline::{HitObjectTimeline, TimelineHitObject};
         let mut key_count = chartinfo.key_count as usize;
         
-        let mut timeline: HitObjectTimeline<f32> = HitObjectTimeline::with_capacity((raw_notes.len() / 3) as usize);
+        let mut timeline: HitObjectTimeline = HitObjectTimeline::with_capacity((raw_notes.len() / 3) as usize);
 
         let seperated_hitobjects = trim_split_iter(raw_notes.split("- "), true);
         for hitobject in seperated_hitobjects {
@@ -229,13 +229,13 @@ fn process_notes(hitobjects: &mut models::hitobjects::HitObjects,
             }
             if slider_end_time != 0.0 {
                 let slider = TimelineHitObject {
-                    time: object_time,
+                    time: object_time as i32,
                     column: lane,
                     key_type: KeyType::SliderStart,
                 };
 
                 let slider_end = TimelineHitObject {
-                    time: slider_end_time,
+                    time: slider_end_time as i32,
                     column: lane,
                     key_type: KeyType::SliderEnd,
                 };
@@ -245,7 +245,7 @@ fn process_notes(hitobjects: &mut models::hitobjects::HitObjects,
             } else {
                 timeline.add_sorted(
                 TimelineHitObject {
-                        time: object_time,
+                        time: object_time as i32,
                         column: lane,
                         key_type: KeyType::Normal,
                     }
@@ -278,12 +278,12 @@ pub(crate) fn from_qua(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
     let mut chartinfo = ChartInfo::empty();
     let mut timing_points = TimingPoints::with_capacity(64);
     let mut hitobjects = HitObjects::with_capacity(2048);
-    let mut timeline: TimingPointTimeline<f32> = TimingPointTimeline::with_capacity(64);
+    let mut timeline: TimingPointTimeline = TimingPointTimeline::with_capacity(64);
 
     process_sections(&uncommented_chart, |header, content| {
         match header {
             "AudioFile" => chartinfo.song_path = content.or_default_empty(ChartDefaults::SONG_PATH),
-            "SongPreviewTime" => chartinfo.preview_time = content.or_default_empty_as::<f32>(*ChartDefaults::PREVIEW_TIME),
+            "SongPreviewTime" => chartinfo.preview_time = content.or_default_empty_as::<i32>(*ChartDefaults::PREVIEW_TIME),
             "BackgroundFile" => chartinfo.bg_path = content.or_default_empty(ChartDefaults::SONG_PATH),
             "Mode" => {
                 if content == "Keys4" {

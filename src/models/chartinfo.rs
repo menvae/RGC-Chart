@@ -10,9 +10,9 @@ pub struct ChartInfo {
     #[wasm_bindgen(getter_with_clone)]
     pub song_path: String,
     #[wasm_bindgen(getter_with_clone)]
-    pub audio_offset: f32,
+    pub audio_offset: i32,
     #[wasm_bindgen(getter_with_clone)]
-    pub preview_time: f32,
+    pub preview_time: i32,
     #[wasm_bindgen(getter_with_clone)]
     pub key_count: u8,
 }
@@ -24,8 +24,8 @@ impl ChartInfo {
         difficulty_name: String,
         bg_path: String,
         song_path: String,
-        audio_offset: f32,
-        preview_time: f32,
+        audio_offset: i32,
+        preview_time: i32,
         key_count: u8,
     ) -> Self {
         Self {
@@ -43,8 +43,8 @@ impl ChartInfo {
             difficulty_name: String::with_capacity(20),
             bg_path: String::with_capacity(20),
             song_path: String::with_capacity(10),
-            audio_offset: 0.0,
-            preview_time: 0.0,
+            audio_offset: 0,
+            preview_time: 0,
             key_count: 4,
         }
     }

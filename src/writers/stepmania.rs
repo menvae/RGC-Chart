@@ -203,9 +203,9 @@ pub(crate) fn to_sm(chart: &models::chart::Chart) -> Result<String, Box<dyn std:
     add_key_value_template(&mut template,
         "#MUSIC",":", &chart.chartinfo.song_path, ";\n");
     add_key_value_template(&mut template,
-        "#OFFSET",":",  &to_seconds(-chart.chartinfo.audio_offset).to_string(), ";\n");
+        "#OFFSET",":",  &to_seconds(-chart.chartinfo.audio_offset as f32).to_string(), ";\n");
     add_key_value_template(&mut template,
-        "#SAMPLESTART",":",  &to_seconds(chart.chartinfo.preview_time).to_string(), ";\n");
+        "#SAMPLESTART",":",  &to_seconds(chart.chartinfo.preview_time as f32).to_string(), ";\n");
     add_key_value_template(&mut template,
         "#SAMPLELENGTH",":",  "12.000", ";\n"); // TODO: maybe add chart length in chart info
     add_key_value_template(&mut template,
