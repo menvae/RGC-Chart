@@ -58,18 +58,18 @@ type HitObject = (u32, u32, i32, u8, u8, i32, String);
 #[derive(Debug, PartialEq, Eq)]
 enum Event {
     Background {
-        start_time: u32,
+        start_time: i32,
         filename: String,
         x_offset: i32,
         y_offset: i32,
     },
     Video {
-        start_time: u32,
+        start_time: i32,
         filename: String,
     },
     Break {
-        start_time: u32,
-        end_time: u32,
+        start_time: i32,
+        end_time: i32,
     },
     Unknown(String),
 }
