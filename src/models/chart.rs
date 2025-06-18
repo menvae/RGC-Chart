@@ -21,11 +21,11 @@ pub struct Chart {
 }
 
 impl Chart {
-    pub(crate) fn new(metadata: Metadata, chartinfo: ChartInfo, timings: TimingPoints, hitobjects: HitObjects) -> Self {
+    pub(crate) fn new(metadata: Metadata, chartinfo: ChartInfo, timing_points: TimingPoints, hitobjects: HitObjects) -> Self {
         Self {
             metadata,
             chartinfo,
-            timing_points: timings,
+            timing_points,
             hitobjects,
         }
     }
