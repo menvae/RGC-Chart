@@ -1,6 +1,7 @@
 use crate::wasm_bindgen;
 use crate::models::common::{
     Row,
+    Key,
     KeyType,
 };
 
@@ -8,7 +9,7 @@ use crate::models::common::{
 #[repr(C, align(64))]
 pub struct HitObjectView<'a> {
     pub time: &'a i32,
-    pub row: &'a [KeyType],
+    pub row: &'a [Key],
     pub beat: &'a f32,
     pub hitsound: &'a [u8],
     _pad: [u8; 20],
@@ -18,7 +19,7 @@ impl<'a> HitObjectView<'a> {
     pub fn new(
         time: &'a i32,
         beat: &'a f32,
-        key: &'a [KeyType],
+        key: &'a [Key],
         hitsound: &'a [u8],
     ) -> Self {
         Self {
@@ -69,7 +70,7 @@ impl HitObjects {
 
     #[inline]
     pub fn add_hitobject(&mut self, time: i32, beat: f32, hitsound: Vec<u8>, row: Row) {
-        if row.iter().all(|&note| note == KeyType::Empty) { return; }
+        if row.iter().all(|&key| key.key_type == KeyType::Empty) { return; }
         self.times.push(time);
         self.hitsounds.push(hitsound);
         self.beats.push(beat);

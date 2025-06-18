@@ -4,7 +4,7 @@ use crate::models::common::{
     GameMode,
     Row,
     ChartDefaults,
-    KeyType,
+    Key,
     TimingChangeType,
 };
 use crate::utils::string::{
@@ -337,7 +337,7 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
                     match key {
                         "CircleSize" => {
                             key_count = value.or_default_empty_as::<f32>(*ChartDefaults::KEY_COUNT as f32) as u8;
-                            temp_row = vec![KeyType::Empty; key_count as usize];
+                            temp_row = vec![Key::empty(); key_count as usize];
                             temp_hitsounds = vec![0; key_count as usize];
                             chartinfo.key_count = key_count;
                         },
@@ -396,13 +396,13 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
                         let slider = TimelineHitObject {
                             time: object_time,
                             column: object_column,
-                            key_type: KeyType::SliderStart,
+                            key: Key::slider_start(Some(slider_end_time)),
                         };
 
                         let slider_end = TimelineHitObject {
                             time: slider_end_time,
                             column: object_column,
-                            key_type: KeyType::SliderEnd,
+                            key: Key::slider_end(),
                         };
                     
                         timeline.add_sorted(slider);
@@ -412,7 +412,7 @@ pub(crate) fn from_osu(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn 
                         TimelineHitObject {
                                 time: object_time,
                                 column: object_column,
-                                key_type: KeyType::Normal,
+                                key: Key::normal(),
                             }
                         );
                     }

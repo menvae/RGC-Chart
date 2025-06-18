@@ -1,5 +1,5 @@
 use crate::models;
-use crate::models::common::{GameMode, KeyType};
+use crate::models::common::{GameMode, KeyType, Row};
 use crate::utils::string::add_key_value_template;
 use crate::utils::time::find_sliderend_time;
 use crate::errors;
@@ -120,7 +120,7 @@ pub(crate) fn to_qua(chart: &models::chart::Chart) -> Result<String, Box<dyn std
 
 
     // process hitobjects
-    let hitobjects: Vec<(&i32, &f32, &Vec<u8>, &Vec<KeyType>)> = chart.hitobjects.iter_zipped().collect();
+    let hitobjects: Vec<(&i32, &f32, &Vec<u8>, &Row)> = chart.hitobjects.iter_zipped().collect();
     template.reserve(hitobjects.len() * key_count as usize);
     template.push_str("HitObjects:");
     if chart.timing_points.is_bpms_empty() {
@@ -128,14 +128,18 @@ pub(crate) fn to_qua(chart: &models::chart::Chart) -> Result<String, Box<dyn std
     } else {
         template.push('\n');
         for (row_idx, (time, _, _hitsounds, row)) in hitobjects.iter().enumerate() {
-            for (i, key_type) in row.iter().enumerate() {
-                match key_type {
+            for (i, key) in row.iter().enumerate() {
+                match key.key_type {
                     KeyType::Normal => {
                         template.push_str(&generate_hitobject(**time, None, i));
                         template.push('\n');
                     },
                     KeyType::SliderStart => {
-                        let slider_end_time = find_sliderend_time(row_idx, i, &hitobjects);
+                        let slider_end_time = if let Some(time) = key.slider_end_time() {
+                            time
+                        } else {
+                            find_sliderend_time(row_idx, i, &hitobjects)
+                        };
                         template.push_str(&generate_hitobject(**time, Some(slider_end_time), i));
                         template.push('\n');
                     },

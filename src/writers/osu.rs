@@ -1,7 +1,6 @@
 use crate::models;
 use crate::models::common::{
-    KeyType,
-    TimingChangeType,
+    Row, TimingChangeType, KeyType
 };
 use crate::utils::string::add_key_value_template;
 use crate::utils::time::find_sliderend_time;
@@ -121,19 +120,23 @@ SliderTickRate:1");
     }
 
     template.push_str("\n[HitObjects]\n");
-    let hitobjects: Vec<(&i32, &f32, &Vec<u8>, &Vec<KeyType>)> = chart.hitobjects.iter_zipped().collect();
+    let hitobjects: Vec<(&i32, &f32, &Vec<u8>, &Row)> = chart.hitobjects.iter_zipped().collect();
     template.reserve(hitobjects.len() * key_count as usize);
     #[allow(unused)]
     for (row_idx, (time, beat, hitsounds, row)) in hitobjects.iter().enumerate() {
-        for (i, key_type) in row.iter().enumerate() {
+        for (i, key) in row.iter().enumerate() {
             let coords = column_to_coords(i+1, chart.chartinfo.key_count as usize);
-            match key_type {
+            match key.key_type {
                 KeyType::Normal => {
-                    template.push_str(&format!("{},192,{},1,0,0:0:0:0:\n", coords, **time as i32));
+                    template.push_str(&format!("{},192,{},1,0,0:0:0:0:\n", coords, time));
                 },
                 KeyType::SliderStart => {
-                    let slider_end_time = find_sliderend_time(row_idx, i, &hitobjects);
-                    template.push_str(&format!("{},192,{},128,0,{}:0:0:0:0:\n", coords, **time as i32, slider_end_time as i32));
+                    let slider_end_time = if let Some(time) = key.slider_end_time() {
+                        time
+                    } else {
+                        find_sliderend_time(row_idx, i, &hitobjects)
+                    };
+                    template.push_str(&format!("{},192,{},128,0,{}:0:0:0:0:\n", coords, time, slider_end_time));
                 },
                 _ => continue,
             }

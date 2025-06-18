@@ -28,7 +28,7 @@ def_varied_type_enum!(pub ChartDefaults {
     HITSOUND: [u8; 4] => [0, 0, 0, 0],
 });
 
-pub type Row = Vec<KeyType>;
+pub type Row = Vec<Key>;
 pub type Measure = Vec<Row>;
 
 #[wasm_bindgen]
@@ -57,7 +57,6 @@ impl fmt::Display for GameMode {
     }
 }
 
-#[allow(unused)]
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeyType { 
@@ -68,4 +67,80 @@ pub enum KeyType {
     Mine,
     Fake,
     Unknown,
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Key {
+    pub key_type: KeyType,
+    slider_end_time: Option<i32>,
+}
+
+#[wasm_bindgen]
+impl Key {
+    #[wasm_bindgen]
+    pub fn empty() -> Self {
+        Self {
+            key_type: KeyType::Empty,
+            slider_end_time: None,
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn normal() -> Self {
+        Self {
+            key_type: KeyType::Normal,
+            slider_end_time: None,
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn slider_start(value: Option<i32>) -> Self {
+        Self {
+            key_type: KeyType::SliderStart,
+            slider_end_time: value,
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn slider_end() -> Self {
+        Self {
+            key_type: KeyType::SliderEnd,
+            slider_end_time: None,
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn mine() -> Self {
+        Self {
+            key_type: KeyType::Mine,
+            slider_end_time: None,
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn fake() -> Self {
+        Self {
+            key_type: KeyType::Fake,
+            slider_end_time: None,
+        }
+    }
+
+    #[wasm_bindgen]
+    pub fn unknown() -> Self {
+        Self {
+            key_type: KeyType::Unknown,
+            slider_end_time: None,
+        }
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn key_type(&self) -> KeyType {
+        self.key_type
+    }
+
+    #[wasm_bindgen]
+    pub fn slider_end_time(&self) -> Option<i32> {
+        self.slider_end_time
+    }
 }

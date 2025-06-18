@@ -1,6 +1,7 @@
 use crate::models;
 use crate::models::common::{
     ChartDefaults,
+    Key,
     KeyType,
     Measure,
 };
@@ -15,10 +16,10 @@ use crate::utils::rhythm::{
 use crate::errors;
 
 #[inline]
-fn sm_row_to_str(row: &[KeyType]) -> String {
+fn sm_row_to_str(row: &[Key]) -> String {
     let mut result = String::with_capacity(row.len());
-    for note in row {
-        result.push(match note {
+    for key in row {
+        result.push(match key.key_type {
             KeyType::Empty => '0',
             KeyType::Normal => '1',
             KeyType::SliderStart => '2',
@@ -36,7 +37,7 @@ fn pad_measure(rows: &models::hitobjects::HitObjects, range: &MeasureRange) -> M
     let key_count = rows.iter_zipped().next().map_or(0, |row| row.3.len());
 
     if range.is_empty() {
-        return vec![vec![KeyType::Empty; key_count]; 4];
+        return vec![vec![Key::empty(); key_count]; 4];
     }
 
     let measure: Vec<_> = rows.iter_zipped()
@@ -45,7 +46,7 @@ fn pad_measure(rows: &models::hitobjects::HitObjects, range: &MeasureRange) -> M
         .collect();
 
     if measure.is_empty() {
-        return vec![vec![KeyType::Empty; key_count]; 4];
+        return vec![vec![Key::empty(); key_count]; 4];
     }
     
 
@@ -80,7 +81,7 @@ fn pad_measure(rows: &models::hitobjects::HitObjects, range: &MeasureRange) -> M
                 continue;
             }
         }
-        padded_measure.push(vec![KeyType::Empty; key_count]);
+        padded_measure.push(vec![Key::empty(); key_count]);
     }
 
     padded_measure

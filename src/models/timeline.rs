@@ -1,5 +1,5 @@
 use crate::models::{hitobjects::HitObjects, timing_points::TimingPoints, timing_points::TimingChange};
-use crate::models::common::{KeyType, TimingChangeType};
+use crate::models::common::{Key, TimingChangeType, KeyType};
 use crate::utils::rhythm::calculate_beat_from_time;
 use std::ops::{Index, IndexMut};
 
@@ -8,7 +8,7 @@ use std::ops::{Index, IndexMut};
 pub struct TimelineHitObject {
     pub time: i32,
     pub column: usize,
-    pub key_type: KeyType,
+    pub key: Key,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -130,7 +130,7 @@ impl HitObjectTimeline {
             return;
         }
 
-        let mut temp_row = vec![KeyType::Empty; key_count];
+        let mut temp_row = vec![Key::empty(); key_count];
         let mut temp_hitsounds = vec![0; key_count];
         
         let mut current_time = self.timeline[0].time;
@@ -142,18 +142,18 @@ impl HitObjectTimeline {
                 let column = obj.column;
                 
                 if column < key_count {
-                    match obj.key_type {
+                    match obj.key.key_type {
                         KeyType::Normal => {
-                            if temp_row[column] != KeyType::SliderStart {
-                                temp_row[column] = KeyType::Normal;
+                            if temp_row[column].key_type != KeyType::SliderStart {
+                                temp_row[column] = Key::normal();
                             }
                         },
                         KeyType::SliderStart => {
-                            temp_row[column] = KeyType::SliderStart;
+                            temp_row[column] = Key::slider_start(obj.key.slider_end_time());
                         },
                         KeyType::SliderEnd => {
-                            if temp_row[column] != KeyType::SliderStart {
-                                temp_row[column] = KeyType::SliderEnd;
+                            if temp_row[column].key_type != KeyType::SliderStart {
+                                temp_row[column] = Key::slider_end();
                             }
                         },
                         _ => {}

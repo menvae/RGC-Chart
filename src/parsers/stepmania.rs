@@ -3,7 +3,8 @@ use crate::models::common::{
     ChartDefaults,
     TimingChangeType,
     GameMode,
-    KeyType,
+    Key,
+    KeyType
 };
 use crate::utils::string::{
     remove_comments,
@@ -55,9 +56,9 @@ pub fn parse_beats(raw: &str) -> (Vec<f32>, Vec<f32>) {
 }
 
 
-pub fn parse_keys_in_row(row: &str) -> Vec<KeyType> {
+pub fn parse_keys_in_row(row: &str) -> Vec<Key> {
 
-    let mut result: Vec<KeyType> = Vec::with_capacity(row.len());
+    let mut result: Vec<Key> = Vec::with_capacity(row.len());
 
     for c in row.chars() {
         result.push(get_sm_note_type(c));
@@ -67,16 +68,16 @@ pub fn parse_keys_in_row(row: &str) -> Vec<KeyType> {
 }
 
 #[inline]
-pub(crate) const fn get_sm_note_type(note: char) -> KeyType {
+pub(crate) fn get_sm_note_type(note: char) -> Key {
     match note {
-        '0' => KeyType::Empty,
-        '1' => KeyType::Normal,
-        '2' => KeyType::SliderStart,
-        '3' => KeyType::SliderEnd,
-        '4' => KeyType::SliderStart,
-        'M' => KeyType::Mine,
-        'F' => KeyType::Fake,
-        _ => KeyType::Unknown,
+        '0' => Key::empty(),
+        '1' => Key::normal(),
+        '2' => Key::slider_start(None),
+        '3' => Key::slider_end(),
+        '4' => Key::slider_start(None),
+        'M' => Key::mine(),
+        'F' => Key::fake(),
+        _ => Key::unknown(),
     }
 }
 
@@ -211,7 +212,7 @@ fn process_notes(raw_note_data: &str, chartinfo: &mut models::chartinfo::ChartIn
     
             let keys = parse_keys_in_row(row);
             for key in &keys {
-                if *key != KeyType::Empty {
+                if key.key_type != KeyType::Empty {
                 }
             }
             

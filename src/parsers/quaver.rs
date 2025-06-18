@@ -2,7 +2,7 @@ use crate::models;
 use crate::models::common::{
     ChartDefaults,
     GameMode,
-    KeyType,
+    Key,
     TimingChangeType
 };
 use crate::utils::string::{
@@ -231,13 +231,13 @@ fn process_notes(hitobjects: &mut models::hitobjects::HitObjects,
                 let slider = TimelineHitObject {
                     time: object_time as i32,
                     column: lane,
-                    key_type: KeyType::SliderStart,
+                    key: Key::slider_start(Some(slider_end_time as i32)),
                 };
 
                 let slider_end = TimelineHitObject {
                     time: slider_end_time as i32,
                     column: lane,
-                    key_type: KeyType::SliderEnd,
+                    key: Key::slider_end(),
                 };
             
                 timeline.add_sorted(slider);
@@ -247,7 +247,7 @@ fn process_notes(hitobjects: &mut models::hitobjects::HitObjects,
                 TimelineHitObject {
                         time: object_time as i32,
                         column: lane,
-                        key_type: KeyType::Normal,
+                        key: Key::normal(),
                     }
                 );
             }

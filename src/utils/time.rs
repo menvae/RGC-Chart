@@ -80,7 +80,7 @@ pub fn find_sliderend_time(
     let slice = &hitobjects[start_idx + 1..];
     
     for (time, _, _, row) in slice {
-        if row[key_idx] == KeyType::SliderEnd {
+        if row[key_idx].key_type == KeyType::SliderEnd {
             return **time
         }
     }
