@@ -3,6 +3,16 @@ name = "rgc-chart"
 repository = "https://github.com/menvae/RGC-Chart"
 authors = ["menvae"]
 description = "A library for parsing and writing rhythm game charts."
+keywords = [
+  "wasm",
+  "rust",
+  "rhythm-game",
+  "osu",
+  "stepmania",
+  "parser",
+  "converter",
+  "writer"
+]
 license = "MIT"
 version = "0.0.6"
 edition = "2021"
