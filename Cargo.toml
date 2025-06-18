@@ -2,6 +2,7 @@
 name = "rgc-chart"
 repository = "https://github.com/menvae/RGC-Chart"
 authors = ["menvae"]
+categories = ["parser-implementations", "encoding", "wasm"]
 description = "A library for parsing and writing rhythm game charts."
 keywords = [
   "wasm",
