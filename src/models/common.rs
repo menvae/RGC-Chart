@@ -72,8 +72,10 @@ pub enum KeyType {
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Key {
+    #[wasm_bindgen(getter_with_clone)]
     pub key_type: KeyType,
-    slider_end_time: Option<i32>,
+    #[wasm_bindgen(getter_with_clone)]
+    pub slider_end_time: Option<i32>,
 }
 
 #[wasm_bindgen]
@@ -132,11 +134,6 @@ impl Key {
             key_type: KeyType::Unknown,
             slider_end_time: None,
         }
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn key_type(&self) -> KeyType {
-        self.key_type
     }
 
     #[wasm_bindgen]
