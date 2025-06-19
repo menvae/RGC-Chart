@@ -20,7 +20,7 @@ fn multiplier_to_beatlength(multiplier: &f32) -> f32 {
 
 #[inline(always)]
 fn column_to_coords(column: usize, key_count: usize) -> u16 {
-    (column as f32 * 512.0 / key_count as f32) as u16
+    (column as f32 * 512.0 / key_count as f32) as u16 + 64
 }
 
 pub(crate) fn to_osu(chart: &models::chart::Chart) -> Result<String, Box<dyn std::error::Error>> {
@@ -125,7 +125,7 @@ SliderTickRate:1");
     #[allow(unused)]
     for (row_idx, (time, beat, hitsounds, row)) in hitobjects.iter().enumerate() {
         for (i, key) in row.iter().enumerate() {
-            let coords = column_to_coords(i+1, chart.chartinfo.key_count as usize);
+            let coords = column_to_coords(i, chart.chartinfo.key_count as usize);
             match key.key_type {
                 KeyType::Normal => {
                     template.push_str(&format!("{},192,{},1,0,0:0:0:0:\n", coords, time));
