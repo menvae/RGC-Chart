@@ -6,10 +6,7 @@ categories = ["parser-implementations", "encoding", "wasm"]
 description = "A library for parsing and writing rhythm game charts."
 keywords = [
   "wasm",
-  "rust",
   "rhythm-game",
-  "osu",
-  "stepmania",
   "parser",
   "converter",
   "writer"
