@@ -24,11 +24,9 @@ use crate::errors;
 
 type BpmsAndStops = (Vec<f32>, Vec<f32>, Vec<TimingChangeType>);
 
-pub fn parse_beats(raw: &str) -> (Vec<f32>, Vec<f32>) {
-    // lazy
+pub fn parse_bpms(raw: &str) -> (Vec<f32>, Vec<f32>) {
     match raw {
         ChartDefaults::RAW_BPMS => return (vec![0.0], vec![*ChartDefaults::BPM]),
-        ChartDefaults::RAW_STOPS => return (vec![], vec![]),
         _ => {}
     }
 
@@ -53,6 +51,34 @@ pub fn parse_beats(raw: &str) -> (Vec<f32>, Vec<f32>) {
         });
 
     (beats, bpms)
+}
+
+pub fn parse_stops(raw: &str) -> (Vec<f32>, Vec<f32>) {
+    match raw {
+        ChartDefaults::RAW_STOPS => return (vec![], vec![]),
+        _ => {}
+    }
+
+    let mut beats = Vec::new();
+    let mut durations = Vec::new();
+
+    raw.split(',')
+        .filter_map(|beat_bpm_str| {
+            let mut beat_bpm = beat_bpm_str.trim().split('=');
+
+            if let (Some(beat_str), Some(duration_str)) = (beat_bpm.next(), beat_bpm.next()) {
+                if let (Ok(beat), Ok(duration)) = (beat_str.parse::<f32>(), duration_str.parse::<f32>()) {
+                    return Some((beat, to_millis(duration)));
+                }
+            }
+            None
+        })
+        .for_each(|(beat, bpm)| {
+            beats.push(beat);
+            durations.push(bpm);
+        });
+
+    (beats, durations)
 }
 
 
@@ -155,7 +181,7 @@ fn process_timing_points(bpms_and_stops: &BpmsAndStops, bpms_only: (Vec<f32>, Ve
                     (&bpm_times, &bpms_only_values)
                 );
 
-                let stop_time = insert_time + to_millis(bpm_or_duration) as i32;
+                let stop_time = insert_time + bpm_or_duration as i32;
 
                 timing_points.add(
                     stop_time,
@@ -264,11 +290,11 @@ pub(crate) fn from_sm(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn s
             "#SAMPLESTART" => chartinfo.preview_time = to_millis(content.or_default_empty_as(*ChartDefaults::PREVIEW_TIME as f32)) as i32,
             "#BPMS" => {
                 raw_bpms = content.or_default_empty(ChartDefaults::RAW_BPMS);
-                bpms = parse_beats(&raw_bpms);
+                bpms = parse_bpms(&raw_bpms);
             },
             "#STOPS" => {
                 raw_stops = content.or_default_empty(ChartDefaults::RAW_STOPS);
-                stops = parse_beats(&raw_stops);
+                stops = parse_stops(&raw_stops);
             },
             "#NOTES" => {
                 raw_notes = content.or_default_empty(ChartDefaults::RAW_NOTES)

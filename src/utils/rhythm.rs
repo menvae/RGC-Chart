@@ -1,5 +1,4 @@
 use crate::utils::math::thresholded_ceil;
-use crate::utils::time::to_millis;
 use crate::models::common::TimingChangeType;
 
 #[repr(C)]
@@ -152,7 +151,7 @@ pub fn calculate_time_from_beat(
                 current_bpm = bpm_or_duration[i];
             }
             TimingChangeType::Stop => {
-                total_time += to_millis(bpm_or_duration[i]);
+                total_time += bpm_or_duration[i];
             }
             _ => {}
         }
