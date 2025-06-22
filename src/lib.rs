@@ -31,8 +31,6 @@ pub mod parse {
     }
 }
 
-// TODO: add wasm quaver support
-
 #[cfg(target_arch = "wasm32")]
 pub mod parse {
     use crate::wasm_bindgen;
