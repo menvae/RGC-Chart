@@ -24,6 +24,34 @@ pub fn write_to_file(file_path: &str, content: &str) -> std::io::Result<()> {
     Ok(())
 }
 
+pub fn sanitize_str(filename: &str) -> String {
+    const FORBIDDEN_CHARS: &[char] = &['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>', '\0', '\n'];
+    
+    let mut sanitized = String::with_capacity(filename.len());
+    
+    for ch in filename.chars() {
+        if FORBIDDEN_CHARS.contains(&ch) {
+            sanitized.push('_');
+        } else if ch.is_control() {
+            sanitized.push('_');
+        } else {
+            sanitized.push(ch);
+        }
+    }
+    
+    sanitized = sanitized.trim_matches(|c| c == '.' || c == ' ').to_string();
+    
+    if sanitized.is_empty() {
+        sanitized = "untitled".to_string();
+    }
+    
+    if sanitized.len() > 255 {
+        sanitized.truncate(255);
+    }
+    
+    sanitized
+}
+
 #[inline]
 pub fn println_test(func_name: &str, color_code: &str, message: &str) {
     writeln!(io::stdout(), "{} || {}{}\x1b[0m", func_name, color_code, message).unwrap();
@@ -74,9 +102,12 @@ macro_rules! parse_and_convert {
                 let function_name = stringify!($name);
                 let extension = function_name.split('_').last().unwrap_or("txt");
                 
+                let sanitized_title = sanitize_str(&chart.metadata.title);
+                let sanitized_difficulty = sanitize_str(&chart.chartinfo.difficulty_name);
+                
                 let filename = format!("{}[{}].{}", 
-                    chart.metadata.title.replace("\n", ""), 
-                    chart.chartinfo.difficulty_name, 
+                    sanitized_title, 
+                    sanitized_difficulty, 
                     extension
                 );
                 
