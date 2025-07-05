@@ -33,6 +33,10 @@ fn generate_slider(coords: i32, time: i32, hitsound_str: &str, slider_end_time: 
     format!("{},192,{},128,{},{}:0:0:0:{}:{}\n", coords, time, hitsound_str, slider_end_time, volume, custom_sample)
 }
 
+fn generate_sb_sample(time: i32, sample_path: &str, volume: u8) -> String {
+    format!("Sample,{},0,\"{}\",{}", time, sample_path, volume)
+}
+
 pub(crate) fn to_osu(chart: &models::chart::Chart) -> Result<String, Box<dyn std::error::Error>> {
     let mut template = String::from("osu file format v14\n");
     let key_count = chart.chartinfo.key_count;
@@ -108,6 +112,20 @@ SliderTickRate:1");
 //Storyboard Layer 3 (Foreground)
 //Storyboard Layer 4 (Overlay)
 //Storyboard Sound Samples\n");
+
+    match &chart.soundbank {
+        Some(soundbank) => {
+            if soundbank.sound_effects.is_empty() { } else {
+                template.push('\n');
+                for sound_effect in &soundbank.sound_effects {
+                    let sample_path = soundbank.get_sound_sample(sound_effect.sample).unwrap_or("".to_string());
+                    template.push_str(&generate_sb_sample(sound_effect.time, &sample_path, sound_effect.volume));
+                    template.push('\n');
+                }
+            }
+        }
+        None => { }
+    }
 
     // process timing points
     template.push_str("\n[TimingPoints]\n");
