@@ -40,6 +40,48 @@ pub fn add_key_value_template(template: &mut String, key: &str, sep: &str, value
     template.push_str(end);
 }
 
+
+#[inline]
+pub fn add_key_value_template_escaped(template: &mut String, key: &str, sep: &str, value: &str, end: &str) {
+    let has_esc = value.chars().any(|c| match c {
+        '"' | '\\' | '\n' | '\r' | '\t' => true,
+        c if c.is_control() => true,
+        _ => false,
+    });
+    
+    if has_esc {
+        template.reserve(key.len() + sep.len() + end.len() + value.len() * 2 + 2);
+        
+        template.push_str(key);
+        template.push_str(sep);
+        template.push('"');
+        
+        for c in value.chars() {
+            match c {
+                '"' => template.push_str("\\\""),
+                '\\' => template.push_str("\\\\"),
+                '\n' => template.push_str("\\n"),
+                '\r' => template.push_str("\\r"),
+                '\t' => template.push_str("\\t"),
+                c if c.is_control() => {
+                    template.push_str(&format!("\\u{:04x}", c as u32));
+                }
+                c => template.push(c),
+            }
+        }
+        
+        template.push('"');
+    } else {
+        template.reserve(key.len() + sep.len() + end.len() + value.len());
+        
+        template.push_str(key);
+        template.push_str(sep);
+        template.push_str(value);
+    }
+    
+    template.push_str(end);
+}
+
 pub trait StrDefaultExtension {
     fn or_default_empty(&self, default: &str) -> String;
 }

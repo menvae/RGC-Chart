@@ -6,6 +6,7 @@ use crate::models::common::{
     Key,
     KeyType
 };
+use crate::models::sound::KeySoundRow;
 use crate::utils::string::{
     remove_comments,
     StrDefaultExtension,
@@ -214,7 +215,7 @@ fn process_notes(raw_note_data: &str, chartinfo: &mut models::chartinfo::ChartIn
     chartinfo.difficulty_name = difficulty_name.or_default_empty(ChartDefaults::DIFFICULTY_NAME);
 
     // TODO: make error for stepmania if converting from keys other than 4
-    let key_count = 4; // TODO: change this later if gonna make this function generic to support Beatmania
+    let _key_count = 4; // TODO: change this later if gonna make this function generic to support Beatmania
 
     let raw_notes = separated_note_data.last().unwrap_or(&"Failed to get raw notes in notes section");
     let measures: Vec<&str> = raw_notes.split(",").collect();
@@ -245,7 +246,7 @@ fn process_notes(raw_note_data: &str, chartinfo: &mut models::chartinfo::ChartIn
             hitobjects.add_hitobject(
                 row_time,
                 row_beat,
-                vec![0; key_count],
+                KeySoundRow::empty(),
                 keys
             );
         }
@@ -310,7 +311,7 @@ pub(crate) fn from_sm(raw_chart: &str) -> Result<models::chart::Chart, Box<dyn s
 
     let hitobjects = process_notes(&raw_notes, &mut chartinfo, &bpms_and_stops);
 
-    Ok(Chart::new(metadata, chartinfo, timing_points, hitobjects))
+    Ok(Chart::new(metadata, chartinfo, timing_points, hitobjects, None))
 }
 
 #[allow(unused)]

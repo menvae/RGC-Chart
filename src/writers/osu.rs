@@ -2,6 +2,8 @@ use crate::models;
 use crate::models::common::{
     Row, TimingChangeType, KeyType
 };
+use crate::models::sound::SoundBank;
+use models::sound::{KeySoundRow, KeySound, HitSoundType};
 use crate::utils::string::add_key_value_template;
 use crate::utils::time::find_sliderend_time;
 #[allow(unused)]
@@ -21,6 +23,14 @@ fn multiplier_to_beatlength(multiplier: &f32) -> f32 {
 #[inline(always)]
 fn column_to_coords(column: usize, key_count: usize) -> u16 {
     (column as f32 * 512.0 / key_count as f32) as u16 + 64
+}
+
+fn generate_normal(coords: i32, time: i32, hitsound_str: &str, volume: u8, custom_sample: &str) -> String {
+    format!("{},192,{},1,{},0:0:0:{}:{}\n", coords, time, hitsound_str, volume, custom_sample)
+}
+
+fn generate_slider(coords: i32, time: i32, hitsound_str: &str, slider_end_time: i32, volume: u8, custom_sample: &str) -> String {
+    format!("{},192,{},128,{},{}:0:0:0:{}:{}\n", coords, time, hitsound_str, slider_end_time, volume, custom_sample)
 }
 
 pub(crate) fn to_osu(chart: &models::chart::Chart) -> Result<String, Box<dyn std::error::Error>> {
@@ -120,15 +130,42 @@ SliderTickRate:1");
     }
 
     template.push_str("\n[HitObjects]\n");
-    let hitobjects: Vec<(&i32, &f32, &Vec<u8>, &Row)> = chart.hitobjects.iter_zipped().collect();
+    let soundbank = chart.soundbank.clone().unwrap_or(SoundBank::new());
+    let hitobjects: Vec<(&i32, &f32, &KeySoundRow, &Row)> = chart.hitobjects.iter_zipped().collect();
     template.reserve(hitobjects.len() * key_count as usize);
     #[allow(unused)]
-    for (row_idx, (time, beat, hitsounds, row)) in hitobjects.iter().enumerate() {
+    for (row_idx, (time, beat, keysounds, row)) in hitobjects.iter().enumerate() {
         for (i, key) in row.iter().enumerate() {
             let coords = column_to_coords(i, chart.chartinfo.key_count as usize);
+
+            let keysound = if keysounds.is_empty {
+                KeySound::normal(100)
+            } else {
+                keysounds[i]
+            };
+            let hitsound = keysound.hitsound_type;
+            let hitsound_str = match hitsound {
+                HitSoundType::Normal => "0",
+                HitSoundType::Clap => "1",
+                HitSoundType::Whistle => "2",
+                HitSoundType::Finish => "3",
+            };
+            let custom_sample = if keysound.has_custom {
+                soundbank.get_sound_sample(keysound.sample
+                    .unwrap_or(0))
+                    .unwrap_or("".to_string())
+            } else {
+                "".to_string()
+            };
+            let volume = if keysound.volume >= 100 {
+                0
+            } else {
+                keysound.volume
+            };
+            
             match key.key_type {
                 KeyType::Normal => {
-                    template.push_str(&format!("{},192,{},1,0,0:0:0:0:\n", coords, time));
+                    template.push_str(&generate_normal(coords.into(), **time, &hitsound_str, volume, &custom_sample));
                 },
                 KeyType::SliderStart => {
                     let slider_end_time = if let Some(time) = key.slider_end_time() {
@@ -136,7 +173,7 @@ SliderTickRate:1");
                     } else {
                         find_sliderend_time(row_idx, i, &hitobjects)
                     };
-                    template.push_str(&format!("{},192,{},128,0,{}:0:0:0:0:\n", coords, time, slider_end_time));
+                    template.push_str(&generate_slider(coords.into(), **time, &hitsound_str, slider_end_time, volume, &custom_sample));
                 },
                 _ => continue,
             }

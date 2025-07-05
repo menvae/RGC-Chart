@@ -1,4 +1,4 @@
-use crate::models::common::{TimingChangeType, Row, KeyType};
+use crate::models::{common::{KeyType, Row, TimingChangeType}, sound::KeySoundRow};
 
 #[inline(always)]
 pub fn to_millis(number: f32) -> f32 {
@@ -70,7 +70,7 @@ pub fn merge_bpm_and_stops(
 pub fn find_sliderend_time(
     start_idx: usize,
     key_idx: usize,
-    hitobjects: &[(&i32, &f32, &Vec<u8>, &Row)],
+    hitobjects: &[(&i32, &f32, &KeySoundRow, &Row)],
 ) -> i32 {
     if start_idx >= hitobjects.len() {
         return 0;

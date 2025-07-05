@@ -1,58 +1,66 @@
 use crate::models;
+use crate::models::sound::KeySound;
+use models::sound::{KeySoundRow, HitSoundType};
 use crate::models::common::{GameMode, KeyType, Row};
-use crate::utils::string::add_key_value_template;
+use crate::utils::string::{add_key_value_template, add_key_value_template_escaped};
 use crate::utils::time::find_sliderend_time;
 use crate::errors;
 
+#[inline(always)]
 fn generate_timing_point(time: i32, bpm: f32) -> String {
-    let time_str = time.to_string();
-    let bpm_str = bpm.to_string();
-    let mut result = String::with_capacity(time_str.len() + bpm_str.len() + 21);
-    result.push_str("- StartTime: ");
-    result.push_str(&time_str);
-    result.push('\n');
-    result.push_str("  Bpm: ");
-    result.push_str(&bpm_str);
-    result
+    format!("- StartTime: {}\n  Bpm: {}", time, bpm)
 }
 
+#[inline(always)]
 fn generate_sv(time: i32, multiplier: f32) -> String {
-    let time_str = time.to_string();
-    let multiplier_str = multiplier.to_string();
-    let mut result = String::with_capacity(time_str.len() + multiplier_str.len() + 28);
-    result.push_str("- StartTime: ");
-    result.push_str(&time_str);
-    result.push('\n');
-    result.push_str("  Multiplier: ");
-    result.push_str(&multiplier_str);
-    result
+    format!("- StartTime: {}\n  Multiplier: {}", time, multiplier)
 }
 
-fn generate_hitobject(time: i32, slider_end_time: Option<i32>, column: usize) -> String {
-    let is_slider = slider_end_time.is_some();
-    let time_str = time.to_string();
-    let column_str = (column + 1).to_string();
-    let mut slider_end_time_str = String::new();
-
-    if is_slider {
-        slider_end_time_str = slider_end_time.unwrap().to_string();
+#[inline(always)]
+fn generate_soundeffect(time: i32, sample_index: usize, volume: u8) -> String {
+    if volume >= 100 {
+        format!("- StartTime: {}\n  Sample: {}", time, sample_index+1)
+    } else {
+        format!("- StartTime: {}\n  Sample: {}\n  Volume: {}", time, sample_index+1, volume)
     }
     
-    let mut result = String::with_capacity(time_str.len() + column_str.len() + slider_end_time_str.len() + 38);
-    result.push_str("- StartTime: ");
-    result.push_str(&time_str);
-    result.push('\n');
-    result.push_str("  Lane: ");
-    result.push_str(&column_str);
-    result.push('\n');
-    if is_slider {
-        result.reserve(11);
-        result.push_str("  EndTime: ");
-        result.push_str(&slider_end_time_str);
-        result.push('\n');
+}
+
+#[inline(always)]
+fn generate_hitobject(time: i32, slider_end_time: Option<i32>, column: usize, keysound: KeySound) -> String {
+    let lane = column + 1;
+    let hitsound = if keysound.hitsound_type == HitSoundType::Normal {
+        ""
+    } else {
+        &("  HitSound: ".to_string() + match keysound.hitsound_type {
+            HitSoundType::Clap => "Clap",
+            HitSoundType::Whistle => "Whistle",
+            HitSoundType::Finish => "Finish", 
+            _ => "Clap",
+        } + "\n")
+    };
+
+    let keysounds = if keysound.has_custom {
+        let sound_sample = keysound.sample.unwrap() + 1;
+        if keysound.volume >= 100 {
+            &format!("\n  - Sample: {}", sound_sample)
+        } else {
+            &format!("\n  - Sample: {}\n    Volume: {}", sound_sample, keysound.volume)
+        }
+    } else {
+        " []"
+    };
+
+    match slider_end_time {
+        Some(end_time) => format!(
+            "- StartTime: {}\n  Lane: {}\n  EndTime: {}\n{}  KeySounds:{}",
+            time, lane, end_time, hitsound, keysounds
+        ),
+        None => format!(
+            "- StartTime: {}\n  Lane: {}\n{}  KeySounds:{}",
+            time, lane, hitsound, keysounds
+        ),
     }
-    result.push_str("  KeySounds: []");
-    result
 }
 
 pub(crate) fn to_qua(chart: &models::chart::Chart) -> Result<String, Box<dyn std::error::Error>> {
@@ -88,13 +96,53 @@ pub(crate) fn to_qua(chart: &models::chart::Chart) -> Result<String, Box<dyn std
         "Tags", ": ", &chart.metadata.tags.join(","), "\n");
     add_key_value_template(&mut template,
         "Creator", ": ", &chart.metadata.creator, "\n");
-    add_key_value_template(&mut template,
+    add_key_value_template_escaped(&mut template,
         "DifficultyName", ": ", &chart.chartinfo.difficulty_name, "\n");
     template.push_str("BPMDoesNotAffectScrollVelocity: true\n");
     template.push_str("InitialScrollVelocity: 1\n");
     template.push_str("EditorLayers: []\n");
-    template.push_str("CustomAudioSamples: []\n");
-    template.push_str("SoundEffects: []\n");
+
+
+    // process custom audio samples
+    template.push_str("CustomAudioSamples:");
+    match &chart.soundbank {
+        Some(soundbank) => {
+            let soundsamples = soundbank.get_sample_paths();
+            if soundsamples.is_empty() {
+                template.push_str(" []\n");
+            } else {
+                template.push('\n');
+                for sound_sample in soundsamples {
+                    template.push_str("- Path: ");
+                    template.push_str(sound_sample.as_str());
+                    template.push('\n');
+                }
+            }
+        }
+        None => {
+            template.push_str(" []\n");
+        }
+    }
+
+    // process sound effects
+    template.push_str("SoundEffects:");
+    match &chart.soundbank {
+        Some(soundbank) => {
+            if soundbank.sound_effects.is_empty() {
+                template.push_str(" []\n");
+            } else {
+                template.push('\n');
+                for sound_effect in &soundbank.sound_effects {
+                    template.push_str(&generate_soundeffect(sound_effect.time, sound_effect.sample, sound_effect.volume));
+                    template.push('\n');
+                }
+            }
+        }
+        None => {
+            template.push_str(" []\n");
+        }
+    }
+    
     template.push_str("TimingPoints:");
     if chart.timing_points.is_bpms_empty() {
         template.push_str(" []\n");
@@ -120,18 +168,23 @@ pub(crate) fn to_qua(chart: &models::chart::Chart) -> Result<String, Box<dyn std
 
 
     // process hitobjects
-    let hitobjects: Vec<(&i32, &f32, &Vec<u8>, &Row)> = chart.hitobjects.iter_zipped().collect();
+    let hitobjects: Vec<(&i32, &f32, &KeySoundRow, &Row)> = chart.hitobjects.iter_zipped().collect();
     template.reserve(hitobjects.len() * key_count as usize);
     template.push_str("HitObjects:");
     if chart.timing_points.is_bpms_empty() {
         template.push_str(" []\n");
     } else {
         template.push('\n');
-        for (row_idx, (time, _, _hitsounds, row)) in hitobjects.iter().enumerate() {
+        for (row_idx, (time, _, keysounds, row)) in hitobjects.iter().enumerate() {
             for (i, key) in row.iter().enumerate() {
+                let keysound = if keysounds.is_empty {
+                    KeySound::normal(100)
+                } else {
+                    keysounds[i]
+                };
                 match key.key_type {
                     KeyType::Normal => {
-                        template.push_str(&generate_hitobject(**time, None, i));
+                        template.push_str(&generate_hitobject(**time, None, i, keysound));
                         template.push('\n');
                     },
                     KeyType::SliderStart => {
@@ -140,7 +193,7 @@ pub(crate) fn to_qua(chart: &models::chart::Chart) -> Result<String, Box<dyn std
                         } else {
                             find_sliderend_time(row_idx, i, &hitobjects)
                         };
-                        template.push_str(&generate_hitobject(**time, Some(slider_end_time), i));
+                        template.push_str(&generate_hitobject(**time, Some(slider_end_time), i, keysound));
                         template.push('\n');
                     },
                     _ => continue,

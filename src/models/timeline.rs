@@ -1,4 +1,10 @@
-use crate::models::{hitobjects::HitObjects, timing_points::TimingPoints, timing_points::TimingChange};
+use crate::models::{
+    hitobjects::HitObjects,
+    timing_points::TimingPoints,
+    timing_points::TimingChange,
+    sound::KeySound,
+    sound::KeySoundRow,
+};
 use crate::models::common::{Key, TimingChangeType, KeyType};
 use crate::utils::rhythm::calculate_beat_from_time;
 use std::ops::{Index, IndexMut};
@@ -9,6 +15,7 @@ pub struct TimelineHitObject {
     pub time: i32,
     pub column: usize,
     pub key: Key,
+    pub keysound: Option<KeySound>
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -131,7 +138,7 @@ impl HitObjectTimeline {
         }
 
         let mut temp_row = vec![Key::empty(); key_count];
-        let mut temp_hitsounds = vec![0; key_count];
+        let mut temp_keysounds: Vec<Option<KeySound>> = vec![None; key_count];
         
         let mut current_time = self.timeline[0].time;
         let mut i = 0;
@@ -140,6 +147,7 @@ impl HitObjectTimeline {
             while i < self.timeline.len() && self.timeline[i].time == current_time {
                 let obj = &self.timeline[i];
                 let column = obj.column;
+                let keysound = obj.keysound;
                 
                 if column < key_count {
                     match obj.key.key_type {
@@ -159,14 +167,22 @@ impl HitObjectTimeline {
                         _ => {}
                     }
                 }
+                temp_keysounds[column] = keysound;
                 i += 1;
             }
             
             let row_beat = calculate_beat_from_time(current_time, offset, (bpms_times, bpms));
+            
+            let keysound_row = if temp_keysounds.iter().all(|&keysound| keysound.is_none()) {
+                KeySoundRow::empty()
+            } else {
+                KeySoundRow::with_unwrap(&temp_keysounds)
+            };
+
             hitobjects.add_hitobject(
                 current_time,
                 row_beat,
-                temp_hitsounds.clone(),
+                keysound_row,
                 temp_row.clone(),
             );
             
@@ -174,7 +190,7 @@ impl HitObjectTimeline {
                 current_time = self.timeline[i].time;
                 unsafe {
                     std::ptr::write_bytes(temp_row.as_mut_ptr(), 0, temp_row.len());
-                    std::ptr::write_bytes(temp_hitsounds.as_mut_ptr(), 0, temp_hitsounds.len());
+                    std::ptr::write_bytes(temp_keysounds.as_mut_ptr(), 0, temp_keysounds.len());
                 }
             }
         }
